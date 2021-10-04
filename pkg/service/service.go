@@ -1,8 +1,20 @@
 package service
 
-type Service struct {
+import (
+	"github.com/Hargeon/videocmprs/db/model"
+	"github.com/Hargeon/videocmprs/pkg/repository"
+)
+
+type Authorization interface {
+	CreateUser(user *model.User) (int64, error)
 }
 
-func NewService() *Service {
-	return &Service{}
+type Service struct {
+	Authorization
+}
+
+func NewService(repo *repository.Repository) *Service {
+	return &Service{
+		Authorization: NewAuthService(repo),
+	}
 }
