@@ -134,6 +134,78 @@ func TestCreateUser(t *testing.T) {
 			if id != testCase.expectedId {
 				t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedId, id)
 			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}
+
+func TestGenerateToken(t *testing.T) {
+	db, mock, err := sqlxmock.Newx()
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
+	}
+
+	cases := []struct {
+		name         string
+		email        string
+		password     string
+		mock         func()
+		tokenPresent bool
+		errorPresent bool
+	}{
+		{
+			name:     "Should find user",
+			email:    "check@check.com",
+			password: "pokopkopkpo",
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
+					WithArgs("check@check.com", "pokopkopkpo").
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+			},
+			tokenPresent: true,
+			errorPresent: false,
+		},
+		{
+			name:     "Should not find user",
+			email:    "",
+			password: "pokopkopkpo",
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
+					WithArgs("", "pokopkopkpo").
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+			},
+			tokenPresent: false,
+			errorPresent: true,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+			repo := repository.NewRepository(db)
+			srv := NewAuthService(repo)
+			token, err := srv.GenerateToken(testCase.email, testCase.password)
+			if err != nil && !testCase.errorPresent {
+				t.Errorf("Unexpected error, error: %s\n", err)
+			}
+
+			if err == nil && testCase.errorPresent {
+				t.Errorf("Should be error")
+			}
+			if token != "" && !testCase.tokenPresent {
+				t.Errorf("Invalid token. expected empty token, got: %s\n", token)
+			}
+
+			if token == "" && testCase.tokenPresent {
+				t.Errorf("Invalid token. token should be not empty")
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
 		})
 	}
 }
