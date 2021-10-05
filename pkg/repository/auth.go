@@ -26,3 +26,10 @@ func (auth AuthRepository) CreateUser(user *model.User) (int64, error) {
 	err := row.Scan(&id)
 	return id, err
 }
+
+func (auth AuthRepository) GetUser(email, password string) (int64, error) {
+	var id int64
+	query := fmt.Sprintf("SELECT id FROM %s WHERE email = $1 AND password_hash = $2 LIMIT 1", model.UserTableName)
+	err := auth.db.QueryRowx(query, email, password).Scan(&id)
+	return id, err
+}
