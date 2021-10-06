@@ -8,14 +8,17 @@ import (
 	"time"
 )
 
+// AuthRepository represent user manipulation
 type AuthRepository struct {
 	db *sqlx.DB
 }
 
+// NewAuthRepository return new AuthRepository
 func NewAuthRepository(db *sqlx.DB) *AuthRepository {
 	return &AuthRepository{db: db}
 }
 
+// CreateUser try to create user in db
 func (auth AuthRepository) CreateUser(user *model.User) (int64, error) {
 	var id int64
 	query := fmt.Sprintf("INSERT INTO %s (email, password_hash, created_at) VALUES ($1, $2, $3) RETURNING id", model.UserTableName)
@@ -27,6 +30,7 @@ func (auth AuthRepository) CreateUser(user *model.User) (int64, error) {
 	return id, err
 }
 
+// GetUser try to find user in db
 func (auth AuthRepository) GetUser(email, password string) (int64, error) {
 	var id int64
 	query := fmt.Sprintf("SELECT id FROM %s WHERE email = $1 AND password_hash = $2 LIMIT 1", model.UserTableName)

@@ -8,21 +8,25 @@ import (
 	"time"
 )
 
+// signUpValidationError uses for invalid user field
 type signUpValidationError struct {
 	FailedField string
 	Tag         string
 	Value       string
 }
 
+// signUpErrorResponse ...
 type signUpErrorResponse struct {
 	Validation []*signUpValidationError
 	Msg        string
 }
 
+// signIn uses for user authorization
 func (h *Handler) signIn(c *fiber.Ctx) error {
 	return nil
 }
 
+// signUp uses for user registration
 func (h *Handler) signUp(c *fiber.Ctx) error {
 	u := new(model.User)
 	if err := c.BodyParser(u); err != nil {
@@ -50,6 +54,7 @@ func (h *Handler) signUp(c *fiber.Ctx) error {
 	})
 }
 
+// validate *model.User for registration
 func validate(u *model.User) []*signUpValidationError {
 	var errors []*signUpValidationError
 	validation := validator.New()

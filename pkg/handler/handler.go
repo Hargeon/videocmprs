@@ -1,3 +1,4 @@
+// Package handler uses for routing
 package handler
 
 import (
@@ -9,10 +10,12 @@ type Handler struct {
 	service *service.Service
 }
 
+// NewHandler returns new Handler
 func NewHandler(s *service.Service) *Handler {
 	return &Handler{service: s}
 }
 
+// InitRoutes initializes and returns *fiber.App
 func (h *Handler) InitRoutes() *fiber.App {
 	app := fiber.New()
 	api := app.Group("/api")
