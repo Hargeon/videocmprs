@@ -45,14 +45,6 @@ func TestGenerateHash(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	type caseTest struct {
-		name         string
-		user         *model.User
-		mock         func(c caseTest)
-		expectedId   int64
-		errorPresent bool
-	}
-
 	db, mock, err := sqlxmock.Newx()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
@@ -60,13 +52,25 @@ func TestCreateUser(t *testing.T) {
 
 	now := time.Now()
 
-	cases := []caseTest{
+	cases := []struct {
+		name         string
+		user         *model.User
+		mock         func()
+		expectedId   int64
+		errorPresent bool
+	}{
 		{
 			name: "With valid email, password, created_at",
 			user: &model.User{
 				Email:     "check@gmail.com",
 				Password:  "123456789",
 				CreatedAt: now,
+			},
+			mock: func() {
+				passHash := generateHash([]byte("123456789"), []byte(os.Getenv("DB_SECRET")))
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+					WithArgs("check@gmail.com", fmt.Sprintf("%x", passHash), now).
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
 			expectedId:   1,
 			errorPresent: false,
@@ -78,6 +82,12 @@ func TestCreateUser(t *testing.T) {
 				Password:  "123456789",
 				CreatedAt: now,
 			},
+			mock: func() {
+				passHash := generateHash([]byte("123456789"), []byte(os.Getenv("DB_SECRET")))
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+					WithArgs("", fmt.Sprintf("%x", passHash), now).
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+			},
 			expectedId:   0,
 			errorPresent: true,
 		},
@@ -88,39 +98,36 @@ func TestCreateUser(t *testing.T) {
 				Password:  "",
 				CreatedAt: now,
 			},
+			mock: func() {
+				passHash := generateHash([]byte(""), []byte(os.Getenv("DB_SECRET")))
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+					WithArgs("check@gmail.com", fmt.Sprintf("%x", passHash), now).
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+			},
 			expectedId:   0,
 			errorPresent: true,
 		},
 		{
-			name: "With valid created_at",
+			name: "With invalid created_at",
 			user: &model.User{
 				Email:     "check@gmail.com",
 				Password:  "123456789",
 				CreatedAt: now,
+			},
+			mock: func() {
+				passHash := generateHash([]byte("123456789"), []byte(os.Getenv("DB_SECRET")))
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+					WithArgs("check@gmail.com", fmt.Sprintf("%x", passHash), now).
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
 			expectedId:   0,
 			errorPresent: true,
 		},
 	}
 
-	for i, testCase := range cases {
-		testMock := func(c caseTest) {
-			passHash := generateHash([]byte(c.user.Password), []byte(os.Getenv("DB_SECRET")))
-			rows := sqlxmock.NewRows([]string{"id"})
-			if !c.errorPresent {
-				rows = rows.AddRow(1)
-			}
-			mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
-				WithArgs(c.user.Email, fmt.Sprintf("%x", passHash), c.user.CreatedAt).
-				WillReturnRows(rows)
-		}
-		testCase.mock = testMock
-		cases[i] = testCase
-	}
-
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			testCase.mock(testCase)
+			testCase.mock()
 			repo := repository.NewRepository(db)
 			srv := NewService(repo)
 			id, err := srv.Authorization.CreateUser(testCase.user)
@@ -161,8 +168,9 @@ func TestGenerateToken(t *testing.T) {
 			email:    "check@check.com",
 			password: "pokopkopkpo",
 			mock: func() {
+				hashPassword := generateHash([]byte("pokopkopkpo"), []byte(os.Getenv("DB_SECRET")))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
-					WithArgs("check@check.com", "pokopkopkpo").
+					WithArgs("check@check.com", fmt.Sprintf("%x", hashPassword)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
 			tokenPresent: true,
@@ -173,8 +181,9 @@ func TestGenerateToken(t *testing.T) {
 			email:    "",
 			password: "pokopkopkpo",
 			mock: func() {
+				hashPassword := generateHash([]byte("pokopkopkpo"), []byte(os.Getenv("DB_SECRET")))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
-					WithArgs("", "pokopkopkpo").
+					WithArgs("", fmt.Sprintf("%x", hashPassword)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
 			tokenPresent: false,

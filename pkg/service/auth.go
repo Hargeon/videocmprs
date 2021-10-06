@@ -38,7 +38,9 @@ func (auth *AuthService) CreateUser(user *model.User) (int64, error) {
 
 // GenerateToken try to find user and returns jwt token
 func (auth *AuthService) GenerateToken(email, password string) (string, error) {
-	id, err := auth.repo.Authorization.GetUser(email, password)
+	secret := os.Getenv("DB_SECRET")
+	hashPassword := generateHash([]byte(password), []byte(secret))
+	id, err := auth.repo.Authorization.GetUser(email, fmt.Sprintf("%x", hashPassword))
 	if err != nil {
 		return "", err
 	}
