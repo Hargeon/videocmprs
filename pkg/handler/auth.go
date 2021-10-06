@@ -23,7 +23,25 @@ type signUpErrorResponse struct {
 
 // signIn uses for user authorization
 func (h *Handler) signIn(c *fiber.Ctx) error {
-	return nil
+	u := new(model.User)
+
+	if err := c.BodyParser(u); err != nil {
+		return signInBadResponse(c, "Invalid email or password")
+	}
+
+	validation := validator.New()
+	if err := validation.StructPartial(u, "Email", "Password"); err != nil {
+		return signInBadResponse(c, "Invalid email or password")
+	}
+
+	token, err := h.service.Authorization.GenerateToken(u.Email, u.Password)
+	if err != nil {
+		return signInBadResponse(c, err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"token": token,
+	})
 }
 
 // signUp uses for user registration
@@ -47,10 +65,8 @@ func (h *Handler) signUp(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
 	}
 
-	return c.JSON(struct {
-		Id int64
-	}{
-		Id: id,
+	return c.JSON(fiber.Map{
+		"id": id,
 	})
 }
 
@@ -69,4 +85,10 @@ func validate(u *model.User) []*signUpValidationError {
 		}
 	}
 	return errors
+}
+
+func signInBadResponse(c *fiber.Ctx, msg string) error {
+	return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+		"msg": msg,
+	})
 }
