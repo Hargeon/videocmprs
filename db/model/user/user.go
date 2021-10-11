@@ -10,6 +10,7 @@ import (
 const TableName = "users"
 
 // Resource represent users table in db
+// TODO move to user repo
 type Resource struct {
 	Id                   int    `jsonapi:"primary,users" db:"id"`
 	Email                string `json:"email" validate:"required,email,min=6,max=32" jsonapi:"attr,email" db:"email"`
@@ -21,5 +22,11 @@ type Resource struct {
 func (r *Resource) JSONAPIMeta() *jsonapi.Meta {
 	return &jsonapi.Meta{
 		"details": "users meta information",
+	}
+}
+
+func (r *Resource) JSONAPILinks() *jsonapi.Links {
+	return &jsonapi.Links{
+		"self": "link",
 	}
 }

@@ -37,6 +37,7 @@ func (s *Service) GenerateToken(c *fiber.Ctx) (jsonapi.Metable, error) {
 
 	hashPassword := encryption.GenerateHash([]byte(usr.Password))
 	usr.Password = fmt.Sprintf("%x", hashPassword)
+	// id, err := s.repo.Exists(ctx, email, password)
 	id, err := s.repo.Retrieve(usr)
 	if err != nil {
 		return nil, err

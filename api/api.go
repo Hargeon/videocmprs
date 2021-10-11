@@ -7,9 +7,7 @@ import (
 	"github.com/Hargeon/videocmprs/api/user"
 	"github.com/Hargeon/videocmprs/api/video"
 	sessionrepo "github.com/Hargeon/videocmprs/pkg/repository/session"
-	urepo "github.com/Hargeon/videocmprs/pkg/repository/user"
 	sessionsrv "github.com/Hargeon/videocmprs/pkg/service/session"
-	uservice "github.com/Hargeon/videocmprs/pkg/service/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jmoiron/sqlx"
 )
@@ -25,26 +23,23 @@ func NewHandler(db *sqlx.DB) *Handler {
 
 // InitRoutes initializes and returns *fiber.App
 func (h *Handler) InitRoutes() *fiber.App {
-	users := h.initUserRoutes()
 	videos := h.initVideoRoutes()
 	sessions := h.initSessionRoutes()
 
 	app := fiber.New()
 	api := app.Group("/api")
+	// BASE_URL/api/health: check the health of the ecosystem (all dependencies: DB, RABBITMQ, ...)
+	// - {postgres: connection failed}
+
+	// BASE_URL/api/ready: {ready: OK}
 	v1 := api.Group("/v1")
-	v1.Mount("/", users)
-	v1.Mount("/", sessions)
+
+	v1.Mount("/users", user.NewHandler(h.db).InitRoutes())
+	v1.Mount("/sessions", sessions)
 	v1.Use(h.initSessionMiddleware())
-	v1.Mount("/", videos)
+	v1.Mount("/videos", videos)
 
 	return app
-}
-
-func (h *Handler) initUserRoutes() *fiber.App {
-	r := urepo.NewRepository(h.db)
-	s := uservice.NewService(r)
-	router := user.NewHandler(s)
-	return router.InitRoutes()
 }
 
 func (h *Handler) initVideoRoutes() *fiber.App {

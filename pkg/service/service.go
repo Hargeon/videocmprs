@@ -16,7 +16,7 @@ type Retriever interface {
 }
 
 type Creator interface {
-	Create(c *fiber.Ctx) (jsonapi.Metable, error)
+	Create(c *fiber.Ctx, resource jsonapi.Linkable) (jsonapi.Metable, error)
 }
 
 type SessionService interface {
