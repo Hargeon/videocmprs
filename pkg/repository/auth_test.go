@@ -2,7 +2,7 @@ package repository
 
 import (
 	"fmt"
-	"github.com/Hargeon/videocmprs/db/model"
+	user2 "github.com/Hargeon/videocmprs/db/model/user"
 	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"testing"
 	"time"
@@ -18,20 +18,20 @@ func TestCreateUser(t *testing.T) {
 
 	cases := []struct {
 		name         string
-		user         *model.User
+		user         *user2.User
 		mock         func()
 		expectedId   int64
 		errorPresent bool
 	}{
 		{
 			name: "With valid email, password, created_at",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "check@gmail.com",
 				Password:  "123456789",
 				CreatedAt: now,
 			},
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("check@gmail.com", "123456789", now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
@@ -40,13 +40,13 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "With invalid email",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "",
 				Password:  "123456789",
 				CreatedAt: now,
 			},
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("", "123456789", now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -55,13 +55,13 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "With invalid password",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "check@gmail.com",
 				Password:  "",
 				CreatedAt: now,
 			},
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("check@gmail.com", "", now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -70,12 +70,12 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "With invalid created_at",
-			user: &model.User{
+			user: &user2.User{
 				Email:    "check@gmail.com",
 				Password: "123456789",
 			},
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("check@gmail.com", "123456789", time.Time{}).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -126,7 +126,7 @@ func TestGetUser(t *testing.T) {
 			email:    "chech@check.com",
 			password: "oiojhoh",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user2.UserTableName)).
 					WithArgs("chech@check.com", "oiojhoh").
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
@@ -138,7 +138,7 @@ func TestGetUser(t *testing.T) {
 			email:    "",
 			password: "oiojhoh",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user2.UserTableName)).
 					WithArgs("", "oiojhoh").
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},

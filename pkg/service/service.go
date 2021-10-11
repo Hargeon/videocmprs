@@ -2,24 +2,33 @@
 package service
 
 import (
-	"github.com/Hargeon/videocmprs/db/model"
-	"github.com/Hargeon/videocmprs/pkg/repository"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/jsonapi"
 )
 
 // Authorization is abstraction for authorization logic
 type Authorization interface {
-	CreateUser(user *model.User) (int64, error)
 	GenerateToken(email, password string) (string, error)
 }
 
-// Service is abstraction for business logic
-type Service struct {
-	Authorization
+type Retriever interface {
+	Retrieve(c *fiber.Ctx) (jsonapi.Metable, error)
 }
 
-// NewService returns new Service
-func NewService(repo *repository.Repository) *Service {
-	return &Service{
-		Authorization: NewAuthService(repo),
-	}
+type Creator interface {
+	Create(c *fiber.Ctx) (jsonapi.Metable, error)
+}
+
+type SessionService interface {
+	GenerateToken(c *fiber.Ctx) (jsonapi.Metable, error)
+}
+
+type UserService interface {
+	Retriever
+	Creator
+}
+
+type VideoService interface {
+	Retriever
+	Creator
 }

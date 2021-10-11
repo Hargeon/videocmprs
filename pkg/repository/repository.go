@@ -2,24 +2,13 @@
 package repository
 
 import (
-	"github.com/Hargeon/videocmprs/db/model"
-	"github.com/jmoiron/sqlx"
+	"github.com/Hargeon/videocmprs/db/model/user"
 )
 
-// Authorization is abstraction for users manipulation
-type Authorization interface {
-	CreateUser(user *model.User) (int64, error)
-	GetUser(email, password string) (int64, error)
+type UserRepository interface {
+	Create(u *user.Resource) (*user.Resource, error)
 }
 
-// Repository represent abstraction for database connection
-type Repository struct {
-	Authorization
-}
-
-// NewRepository return new Repository
-func NewRepository(db *sqlx.DB) *Repository {
-	return &Repository{
-		Authorization: NewAuthRepository(db),
-	}
+type SessionRepository interface {
+	Retrieve(u *user.Resource) (int64, error)
 }

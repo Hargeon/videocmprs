@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"fmt"
-	"github.com/Hargeon/videocmprs/db/model"
+	user2 "github.com/Hargeon/videocmprs/db/model/user"
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"os"
@@ -54,21 +54,21 @@ func TestCreateUser(t *testing.T) {
 
 	cases := []struct {
 		name         string
-		user         *model.User
+		user         *user2.User
 		mock         func()
 		expectedId   int64
 		errorPresent bool
 	}{
 		{
 			name: "With valid email, password, created_at",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "check@gmail.com",
 				Password:  "123456789",
 				CreatedAt: now,
 			},
 			mock: func() {
 				passHash := generateHash([]byte("123456789"), []byte(os.Getenv("DB_SECRET")))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("check@gmail.com", fmt.Sprintf("%x", passHash), now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
@@ -77,14 +77,14 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "With invalid email",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "",
 				Password:  "123456789",
 				CreatedAt: now,
 			},
 			mock: func() {
 				passHash := generateHash([]byte("123456789"), []byte(os.Getenv("DB_SECRET")))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("", fmt.Sprintf("%x", passHash), now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -93,14 +93,14 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "With invalid password",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "check@gmail.com",
 				Password:  "",
 				CreatedAt: now,
 			},
 			mock: func() {
 				passHash := generateHash([]byte(""), []byte(os.Getenv("DB_SECRET")))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("check@gmail.com", fmt.Sprintf("%x", passHash), now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -109,14 +109,14 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "With invalid created_at",
-			user: &model.User{
+			user: &user2.User{
 				Email:     "check@gmail.com",
 				Password:  "123456789",
 				CreatedAt: now,
 			},
 			mock: func() {
 				passHash := generateHash([]byte("123456789"), []byte(os.Getenv("DB_SECRET")))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user2.UserTableName)).
 					WithArgs("check@gmail.com", fmt.Sprintf("%x", passHash), now).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -169,7 +169,7 @@ func TestGenerateToken(t *testing.T) {
 			password: "pokopkopkpo",
 			mock: func() {
 				hashPassword := generateHash([]byte("pokopkopkpo"), []byte(os.Getenv("DB_SECRET")))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user2.UserTableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPassword)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
@@ -182,7 +182,7 @@ func TestGenerateToken(t *testing.T) {
 			password: "pokopkopkpo",
 			mock: func() {
 				hashPassword := generateHash([]byte("pokopkopkpo"), []byte(os.Getenv("DB_SECRET")))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", model.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user2.UserTableName)).
 					WithArgs("", fmt.Sprintf("%x", hashPassword)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
