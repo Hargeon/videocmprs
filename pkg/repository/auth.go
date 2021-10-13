@@ -1,5 +1,7 @@
 package repository
 
+// Deprecated
+/*
 import (
 	"context"
 	"fmt"
@@ -42,3 +44,4 @@ func (auth AuthRepository) GetUser(email, password string) (int64, error) {
 	err := auth.db.QueryRowxContext(ctx, query, email, password).Scan(&id)
 	return id, err
 }
+*/

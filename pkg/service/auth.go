@@ -1,5 +1,7 @@
 package service
 
+// Deprecated
+/*
 import (
 	"crypto/sha1"
 	"fmt"
@@ -61,3 +63,4 @@ func generateHash(password, salt []byte) []byte {
 	hash.Write(password)
 	return hash.Sum(salt)
 }
+*/

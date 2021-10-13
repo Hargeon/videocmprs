@@ -1,5 +1,7 @@
-package handler
+package api
 
+// Deprecated
+/*
 import (
 	"github.com/Hargeon/videocmprs/db/model"
 	"github.com/go-playground/validator/v10"
@@ -92,3 +94,4 @@ func signInBadResponse(c *fiber.Ctx, msg string) error {
 		"msg": msg,
 	})
 }
+*/

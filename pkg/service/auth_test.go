@@ -1,5 +1,7 @@
 package service
 
+// Deprecated
+/*
 import (
 	"bytes"
 	"crypto/sha1"
@@ -218,3 +220,4 @@ func TestGenerateToken(t *testing.T) {
 		})
 	}
 }
+*/
