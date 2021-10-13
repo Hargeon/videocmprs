@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/Hargeon/videocmprs/pkg/handler"
-	"github.com/Hargeon/videocmprs/pkg/repository"
-	"github.com/Hargeon/videocmprs/pkg/service"
+	"github.com/Hargeon/videocmprs/api"
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -29,9 +27,7 @@ func main() {
 	}
 	defer db.Close()
 
-	repo := repository.NewRepository(db)
-	s := service.NewService(repo)
-	h := handler.NewHandler(s)
+	h := api.NewHandler(db)
 	app := h.InitRoutes()
 
 	if err := app.Listen(port); err != nil {
