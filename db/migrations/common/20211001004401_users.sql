@@ -1,10 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS users (
-    id bigserial not null unique PRIMARY KEY,
-    email varchar(255) not null unique,
-    password_hash varchar(255) not null,
-    created_at  timestamp not null
+    id bigserial NOT NULL UNIQUE PRIMARY KEY,
+    email VARCHAR(255) NOT NULL unique,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- +goose StatementEnd
 
