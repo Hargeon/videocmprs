@@ -2,24 +2,19 @@
 package service
 
 import (
-	"github.com/Hargeon/videocmprs/db/model"
-	"github.com/Hargeon/videocmprs/pkg/repository"
+	"context"
+	"github.com/google/jsonapi"
 )
 
-// Authorization is abstraction for authorization logic
-type Authorization interface {
-	CreateUser(user *model.User) (int64, error)
-	GenerateToken(email, password string) (string, error)
+type Creator interface {
+	Create(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
 }
 
-// Service is abstraction for business logic
-type Service struct {
-	Authorization
+type Retriever interface {
+	Retrieve(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
 }
 
-// NewService returns new Service
-func NewService(repo *repository.Repository) *Service {
-	return &Service{
-		Authorization: NewAuthService(repo),
-	}
+type UserService interface {
+	Creator
+	Retriever
 }
