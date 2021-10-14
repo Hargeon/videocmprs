@@ -26,7 +26,7 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 	}
 
 	query, args, err := sq.Insert(UserTableName).Columns("email", "password_hash").
-		Values(user.Email, user.Password).Suffix("RETURNING id").ToSql()
+		Values(user.Email, user.Password).Suffix("RETURNING id").PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}
