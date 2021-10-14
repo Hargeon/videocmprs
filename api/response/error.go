@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// ErrorJsonApiResponse returns error response in json:api specification
 func ErrorJsonApiResponse(c *fiber.Ctx, status int, errors []string) error {
 	var respBody []byte
 	errBuf := bytes.NewBuffer(respBody)
