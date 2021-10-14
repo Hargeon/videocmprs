@@ -2,6 +2,7 @@ package user
 
 import (
 	"bytes"
+	"github.com/Hargeon/videocmprs/api/response"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service"
 	usersrv "github.com/Hargeon/videocmprs/pkg/service/user"
@@ -28,7 +29,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 	return router
 }
 
-// create not implemented yet
+// create function validate request and create user
 func (h *Handler) create(c *fiber.Ctx) error {
 	usr := new(user.Resource)
 	bodyReader := bytes.NewReader(c.Body())
@@ -39,12 +40,21 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	validation := validator.New()
 	err := validation.Struct(usr)
 	if err != nil {
-
+		errors := []string{"Validation failed"}
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
-	//payload, err := jsonapi.Marshal(usr2)
-	//if err != nil {
-	//	return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	//}
-	//return c.Status(http.StatusCreated).JSON(payload)
-	return nil
+
+	linkable, err := h.srv.Create(c.Context(), usr)
+	if err != nil {
+		errors := []string{err.Error()}
+		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
+	}
+
+	payload, err := jsonapi.Marshal(linkable)
+	if err != nil {
+		errors := []string{err.Error()}
+		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
+	}
+
+	return c.Status(http.StatusCreated).JSON(payload)
 }
