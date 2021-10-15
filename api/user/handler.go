@@ -1,3 +1,4 @@
+// Package user consists of handlers for users
 package user
 
 import (
@@ -17,12 +18,14 @@ type Handler struct {
 	srv service.UserService
 }
 
+// NewHandler ...
 func NewHandler(db *sqlx.DB) *Handler {
 	repo := user.NewRepository(db)
 	srv := usersrv.NewService(repo)
 	return &Handler{srv: srv}
 }
 
+// InitRoutes for users
 func (h *Handler) InitRoutes() *fiber.App {
 	router := fiber.New()
 	router.Post("/", h.create)
