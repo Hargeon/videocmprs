@@ -1,3 +1,4 @@
+// Package user represent db connection to creating and retrieving user
 package user
 
 import (
@@ -11,6 +12,7 @@ import (
 
 const queryTimeOut = 5 * time.Second
 
+// Repository ...
 type Repository struct {
 	db *sqlx.DB
 }

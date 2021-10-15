@@ -17,6 +17,7 @@ type Resource struct {
 	CreatedAt            time.Time
 }
 
+// JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
 		"self": "need add", // TODO need add link
