@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const queryTimeOut = 5 * time.Second
+
 type Repository struct {
 	db *sqlx.DB
 }
@@ -31,7 +33,7 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 		return nil, err
 	}
 
-	c, cancel := context.WithTimeout(ctx, 5*time.Second)
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
 	var id int64
@@ -51,7 +53,7 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 		return nil, err
 	}
 
-	c, cancel := context.WithTimeout(ctx, 5*time.Second)
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
 	user := new(Resource)
