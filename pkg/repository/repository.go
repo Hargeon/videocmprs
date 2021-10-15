@@ -14,6 +14,10 @@ type Retriever interface {
 	Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error)
 }
 
+type ExistAble interface {
+	Exists(ctx context.Context, email, password string) (int64, error)
+}
+
 type UserRepository interface {
 	Creator
 	Retriever
