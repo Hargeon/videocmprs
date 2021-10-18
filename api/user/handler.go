@@ -38,7 +38,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	bodyReader := bytes.NewReader(c.Body())
 	if err := jsonapi.UnmarshalPayload(bodyReader, usr); err != nil {
 		errors := []string{err.Error()}
-		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
 	validation := validator.New()

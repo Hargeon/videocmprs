@@ -55,7 +55,7 @@ func TestCreate(t *testing.T) {
 			},
 			mock:           func() {},
 			expectedBody:   `{"errors":[{"title":"data is not a jsonapi representation of '*user.Resource'"}]}` + "\n",
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "With invalid email",
@@ -118,7 +118,7 @@ func TestCreate(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "With invalid params",
+			name: "With valid params",
 			user: &user.Resource{
 				Email:                "check@check.com",
 				Password:             "123456789",
