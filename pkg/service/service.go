@@ -14,6 +14,10 @@ type Retriever interface {
 	Retrieve(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
 }
 
+type TokenAble interface {
+	GenerateToken(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
+}
+
 type UserService interface {
 	Creator
 	Retriever
