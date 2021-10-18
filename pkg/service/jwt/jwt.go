@@ -1,3 +1,4 @@
+// Package jwt uses for generation and parsing jwt tokens for user
 package jwt
 
 import (
@@ -13,6 +14,7 @@ type authClaims struct {
 	jwt.StandardClaims
 }
 
+// SignedString function creates jwt token
 func SignedString(id int64) (string, error) {
 	claims := authClaims{
 		Id: id,
