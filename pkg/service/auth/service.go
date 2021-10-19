@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Hargeon/videocmprs/pkg/repository"
-	"github.com/Hargeon/videocmprs/pkg/repository/auth"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
 	"github.com/Hargeon/videocmprs/pkg/service/jwt"
@@ -41,6 +40,10 @@ func (srv *Service) GenerateToken(ctx context.Context, resource jsonapi.Linkable
 		return nil, err
 	}
 
-	res := &auth.Resource{ID: token}
+	res := &user.Resource{
+		ID:    id,
+		Email: usr.Email,
+		Token: token,
+	}
 	return res, nil
 }

@@ -14,6 +14,7 @@ type Resource struct {
 	Email                string `jsonapi:"attr,email" db:"email" validate:"required,email,min=6,max=32"`
 	Password             string `jsonapi:"attr,password,omitempty" validate:"required,min=6,max=250"`
 	PasswordConfirmation string `jsonapi:"attr,password_confirmation,omitempty" validate:"required,min=6,max=250,eqfield=Password"`
+	Token                string `jsonapi:"attr,token,omitempty"`
 	CreatedAt            time.Time
 }
 
