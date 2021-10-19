@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-const port = ":3000"
+const port = ":3001"
 
 func main() {
 	err := godotenv.Load()
