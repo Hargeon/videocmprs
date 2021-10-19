@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE users;
+DROP TABLE IF EXISTS users;
 -- +goose StatementEnd
