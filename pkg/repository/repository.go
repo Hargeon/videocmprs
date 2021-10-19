@@ -22,3 +22,8 @@ type UserRepository interface {
 	Creator
 	Retriever
 }
+
+type VideoRepository interface {
+	Creator
+	Retriever
+}
