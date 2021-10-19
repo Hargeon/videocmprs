@@ -12,18 +12,18 @@ import (
 	"github.com/google/jsonapi"
 )
 
-// Service ...
-type Service struct {
+// AuthorizationService ...
+type AuthorizationService struct {
 	repo repository.ExistAble
 }
 
 // NewService ...
-func NewService(repo repository.ExistAble) *Service {
-	return &Service{repo: repo}
+func NewService(repo repository.ExistAble) *AuthorizationService {
+	return &AuthorizationService{repo: repo}
 }
 
 // GenerateToken jwt for user
-func (srv *Service) GenerateToken(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
+func (srv *AuthorizationService) GenerateToken(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
 	usr, ok := resource.(*user.Resource)
 	if !ok {
 		return nil, errors.New("invalid type assertion in auth service")
