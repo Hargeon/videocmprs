@@ -11,18 +11,18 @@ import (
 
 const queryTimeOut = 5 * time.Second
 
-// Repository ...
-type Repository struct {
+// AuthorizationRepository ...
+type AuthorizationRepository struct {
 	db *sqlx.DB
 }
 
 // NewRepository ...
-func NewRepository(db *sqlx.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *sqlx.DB) *AuthorizationRepository {
+	return &AuthorizationRepository{db: db}
 }
 
 // Exists function return id if user exists
-func (repo *Repository) Exists(ctx context.Context, email, password string) (int64, error) {
+func (repo *AuthorizationRepository) Exists(ctx context.Context, email, password string) (int64, error) {
 	query, args, err := sq.Select("id").From(user.UserTableName).
 		Where(sq.And{sq.Eq{"email": email}, sq.Eq{"password_hash": password}}).
 		Limit(1).PlaceholderFormat(sq.Dollar).ToSql()
