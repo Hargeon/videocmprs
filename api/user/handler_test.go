@@ -54,7 +54,7 @@ func TestCreate(t *testing.T) {
 				return result
 			},
 			mock:           func() {},
-			expectedBody:   `{"errors":[{"title":"data is not a jsonapi representation of '*user.Resource'"}]}` + "\n",
+			expectedBody:   `{"errors":[{"title":"Bad request"}]}` + "\n",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{

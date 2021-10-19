@@ -54,7 +54,7 @@ func TestSignIn(t *testing.T) {
 			},
 			mock:           func() {},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"errors":[{"title":"data is not a jsonapi representation of '*user.Resource'"}]}` + "\n",
+			expectedBody:   `{"errors":[{"title":"Bad request"}]}` + "\n",
 		},
 		{
 			name: "With invalid email",
