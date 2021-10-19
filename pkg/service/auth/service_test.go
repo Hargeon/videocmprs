@@ -70,12 +70,12 @@ func TestExists(t *testing.T) {
 			}
 
 			if err == nil {
-				token, ok := linkable.(*auth.Resource)
+				usr, ok := linkable.(*user.Resource)
 				if !ok {
 					t.Fatalf("Can't type assertion for auth.Resource\n")
 				}
 
-				tokenPresent := token.ID > ""
+				tokenPresent := usr.Token > ""
 
 				if tokenPresent != testCase.tokenPresent {
 					t.Errorf("Invalid token\n")
