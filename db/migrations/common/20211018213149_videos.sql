@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS videos (
     size BIGINT,
     bitrate BIGINT,
     resolution varchar(255),
+    ratio varchar(255)
     service_id varchar(255),
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
