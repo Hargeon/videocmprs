@@ -40,7 +40,7 @@ func TestCreate(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", UserTableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
-					WillReturnRows(mock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s WHERE", UserTableName)).
 					WithArgs(1).
