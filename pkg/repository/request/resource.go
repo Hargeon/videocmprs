@@ -18,8 +18,8 @@ type Resource struct {
 	Resolution string `db:"resolution"`
 	Ration     string `db:"ratio"`
 
-	OriginalVideo  video.Resource
-	ConvertedVideo video.Resource
+	OriginalVideo  *video.Resource
+	ConvertedVideo *video.Resource
 }
 
 // JSONAPILinks ...
