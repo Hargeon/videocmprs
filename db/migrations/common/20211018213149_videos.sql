@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS videos (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS videos
+DROP TABLE IF EXISTS videos;
 -- +goose StatementEnd
