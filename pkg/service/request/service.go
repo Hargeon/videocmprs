@@ -13,10 +13,12 @@ func NewService() *Service {
 }
 
 func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
-	// create video
-
 	// create request
 
 	// send video to cloud
+
+	// create video
+
+	// update request
 	return nil, nil
 }
