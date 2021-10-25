@@ -3,12 +3,12 @@
 CREATE TABLE IF NOT EXISTS requests (
     id BIGSERIAL NOT NULL UNIQUE PRIMARY KEY,
     user_id BIGINT REFERENCES users,
-    status VARCHAR(255),
-    details VARCHAR(255),
+    status VARCHAR(255) NOT NULL DEFAULT 'original_in_review',
+    details VARCHAR(255) NOT NULL DEFAULT '',
 
-    bitrate BIGINT,
-    resolution varchar(255),
-    ratio varchar(255)
+    bitrate BIGINT NOT NULL,
+    resolution varchar(255) NOT NULL,
+    ratio varchar(255) NOT NULL,
 
     original_file_id BIGINT,
     converted_file_id BIGINT,
