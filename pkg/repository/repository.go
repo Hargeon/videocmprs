@@ -18,12 +18,11 @@ type ExistAble interface {
 	Exists(ctx context.Context, email, password string) (int64, error)
 }
 
-type UserRepository interface {
+type Repository interface {
 	Creator
 	Retriever
 }
 
 type VideoRepository interface {
-	Creator
-	Retriever
+	Repository
 }
