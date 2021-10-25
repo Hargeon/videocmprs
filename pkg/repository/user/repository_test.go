@@ -81,10 +81,6 @@ func TestCreate(t *testing.T) {
 			testCase.mock()
 			repo := NewRepository(db)
 			linkable, err := repo.Create(context.Background(), testCase.user)
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("there were unfulfilled expectations: %s", err)
-			}
-
 			if err != nil && !testCase.errorPresent {
 				t.Errorf("Unexpected error: %s\n", err)
 			}
@@ -106,6 +102,10 @@ func TestCreate(t *testing.T) {
 				if usr.Email != testCase.expectedEmail {
 					t.Errorf("Invalid user email, expected: %s, got: %s\n", testCase.expectedEmail, usr.Email)
 				}
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
 			}
 		})
 	}
