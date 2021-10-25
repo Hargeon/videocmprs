@@ -32,25 +32,37 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	req := new(Resource)
-	//err := sq.Insert(TableName).
-	//	Columns("bitrate", "resolution", "ration").
-	//	Values(request.Bitrate, request.Resolution, request.Ration).
-	//	Suffix("RETURNING id, bitrate, resolution, ration").
-	//	PlaceholderFormat(sq.Dollar).
-	//	RunWith(repo.db).
-	//	QueryRowContext(c).
-	//	Scan(&req.ID, &req.Bitrate, &req.Resolution, &req.Ration)
-
-	query, args, err := sq.Insert(TableName).
-		Columns("bitrate", "resolution", "ration").
-		Values(request.Bitrate, request.Resolution, request.Ration).
-		Suffix("RETURNING id, bitrate, resolution, ration").
-		PlaceholderFormat(sq.Dollar).ToSql()
+	var id int64
+	err := sq.Insert(TableName).
+		Columns("bitrate", "resolution", "ration", "user_id").
+		Values(request.Bitrate, request.Resolution, request.Ratio, request.UserID).
+		Suffix("RETURNING id").
+		PlaceholderFormat(sq.Dollar).
+		RunWith(repo.db).
+		QueryRowContext(c).
+		Scan(&id)
 	if err != nil {
 		return nil, err
 	}
 
-	err = repo.db.QueryRowxContext(c, query, args...).StructScan(req)
-	return req, err
+	return repo.Retrieve(ctx, id)
+}
+
+func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
+	request := new(Resource)
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
+	defer cancel()
+
+	query, args, err := sq.
+		Select("id", "status", "details", "bitrate", "resolution", "ratio").
+		From(TableName).
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	//err = repo.db.GetContext(c, request, query, args...)
+	err = repo.db.QueryRowxContext(c, query, args...).StructScan(request)
+	return request, err
 }
