@@ -3,6 +3,7 @@ package request
 import (
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/google/jsonapi"
+	"mime/multipart"
 )
 
 // TableName is table name in db
@@ -21,6 +22,8 @@ type Resource struct {
 
 	OriginalVideo  *video.Resource
 	ConvertedVideo *video.Resource
+
+	VideoRequest *multipart.FileHeader
 }
 
 // JSONAPILinks ...

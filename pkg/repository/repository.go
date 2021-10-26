@@ -18,11 +18,16 @@ type ExistAble interface {
 	Exists(ctx context.Context, email, password string) (int64, error)
 }
 
+type Updater interface {
+	Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error)
+}
+
 type Repository interface {
 	Creator
 	Retriever
 }
 
-type VideoRepository interface {
+type UpdaterRepository interface {
 	Repository
+	Updater
 }

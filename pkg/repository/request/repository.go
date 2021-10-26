@@ -62,7 +62,28 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 		return nil, err
 	}
 
-	//err = repo.db.GetContext(c, request, query, args...)
-	err = repo.db.QueryRowxContext(c, query, args...).StructScan(request)
+	err = repo.db.GetContext(c, request, query, args...)
 	return request, err
+}
+
+func (repo *Repository) Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error) {
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
+	defer cancel()
+
+	var reqId int64
+	err := sq.
+		Update(TableName).
+		SetMap(fields).
+		Where(sq.Eq{"id": id}).
+		Suffix("RETURNING id").
+		RunWith(repo.db).
+		PlaceholderFormat(sq.Dollar).
+		QueryRowContext(c).
+		Scan(&reqId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.Retrieve(ctx, reqId)
 }
