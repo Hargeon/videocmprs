@@ -30,8 +30,8 @@ func (r *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (jso
 
 	var id int64
 	err := sq.Insert(TableName).
-		Columns("name", "size", "bitrate").
-		Values(video.Name, video.Size, video.Bitrate).
+		Columns("name", "size", "bitrate", "service_id").
+		Values(video.Name, video.Size, video.Bitrate, video.ServiceId).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
