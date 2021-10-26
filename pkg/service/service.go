@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"github.com/google/jsonapi"
+	"mime/multipart"
 )
 
 type Creator interface {
@@ -21,4 +22,8 @@ type TokenAble interface {
 type UserService interface {
 	Creator
 	Retriever
+}
+
+type CloudStorage interface {
+	Upload(ctx context.Context, header *multipart.FileHeader) (string, error)
 }
