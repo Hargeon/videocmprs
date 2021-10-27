@@ -31,7 +31,7 @@ func TestUserIdentify(t *testing.T) {
 			expectedBody:   `{"errors":[{"title":"Should be Bearer token"}]}` + "\n",
 		},
 		{
-			name: "With bad Bearer token",
+			name: "Invalid Bearer token",
 			generateToken: func() string {
 				return "Bearer pojjpjpio.[pk[pkp[k["
 			},
@@ -39,7 +39,7 @@ func TestUserIdentify(t *testing.T) {
 			expectedBody:   `{"errors":[{"title":"token contains an invalid number of segments"}]}` + "\n",
 		},
 		{
-			name: "With good Bearer token",
+			name: "Valid Bearer token",
 			generateToken: func() string {
 				token, err := jwt.SignedString(64)
 				if err != nil {

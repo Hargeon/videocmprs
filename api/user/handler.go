@@ -48,17 +48,16 @@ func (h *Handler) create(c *fiber.Ctx) error {
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
-	linkable, err := h.srv.Create(c.Context(), usr)
+	res, err := h.srv.Create(c.Context(), usr)
 	if err != nil {
 		errors := []string{err.Error()}
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
 
-	payload, err := jsonapi.Marshal(linkable)
+	err = jsonapi.MarshalPayload(c.Status(http.StatusCreated), res)
 	if err != nil {
 		errors := []string{err.Error()}
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
-
-	return c.Status(http.StatusCreated).JSON(payload)
+	return nil
 }
