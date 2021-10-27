@@ -14,11 +14,11 @@ import (
 
 // AuthorizationService ...
 type AuthorizationService struct {
-	repo repository.ExistAble
+	repo repository.Existable
 }
 
 // NewService ...
-func NewService(repo repository.ExistAble) *AuthorizationService {
+func NewService(repo repository.Existable) *AuthorizationService {
 	return &AuthorizationService{repo: repo}
 }
 

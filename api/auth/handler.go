@@ -15,7 +15,7 @@ import (
 )
 
 type Handler struct {
-	srv service.TokenAble
+	srv service.Tokenable
 }
 
 func NewHandler(db *sqlx.DB) *Handler {
@@ -31,29 +31,29 @@ func (h *Handler) InitRoutes() *fiber.App {
 }
 
 func (h *Handler) signIn(c *fiber.Ctx) error {
-	usr := new(user.Resource)
+	u := new(user.Resource)
 	bodyReader := bytes.NewReader(c.Body())
-	if err := jsonapi.UnmarshalPayload(bodyReader, usr); err != nil {
+	if err := jsonapi.UnmarshalPayload(bodyReader, u); err != nil {
 		errors := []string{"Bad request"}
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
 	validation := validator.New()
-	if err := validation.StructPartial(usr, "Email", "Password"); err != nil {
+	if err := validation.StructPartial(u, "Email", "Password"); err != nil {
 		errors := []string{"Validation failed"}
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
-	linkable, err := h.srv.GenerateToken(c.Context(), usr)
+	resource, err := h.srv.GenerateToken(c.Context(), u)
 	if err != nil {
 		errors := []string{err.Error()}
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
 
-	payload, err := jsonapi.Marshal(linkable)
+	err = jsonapi.MarshalPayload(c.Status(http.StatusCreated), resource)
 	if err != nil {
 		errors := []string{err.Error()}
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
-	return c.Status(http.StatusCreated).JSON(payload)
+	return nil
 }

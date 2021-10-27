@@ -15,7 +15,7 @@ type Retriever interface {
 	Retrieve(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
 }
 
-type TokenAble interface {
+type Tokenable interface {
 	GenerateToken(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
 }
 
