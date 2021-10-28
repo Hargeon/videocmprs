@@ -47,25 +47,25 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	req.VideoRequest = videoFile
 	srvVideoId, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
 	if err != nil {
-		fields := map[string]interface{}{"status": "failed", "details": `Can't upload video to cloud'`}
-		reqLinkable, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+		fields := map[string]interface{}{"status": "failed", "details": `Can't upload video to cloud`}
+		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't upload video to cloud: %s, can't update request status: %s",
 				err.Error(), updateErr.Error())
 		}
-		return reqLinkable, err
+		return nil, err
 	}
 
 	videoRes.ServiceId = srvVideoId
 	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes)
 	if err != nil {
-		fields := map[string]interface{}{"status": "failed", "details": `Can't add video to database'`}
-		reqLinkable, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+		fields := map[string]interface{}{"status": "failed", "details": `Can't add video to database`}
+		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't add video to database: %s, can't update request status: %s",
 				err, updateErr)
 		}
-		return reqLinkable, err
+		return nil, err
 	}
 
 	updatedVideo, ok := videoLinkable.(*video.Resource)
