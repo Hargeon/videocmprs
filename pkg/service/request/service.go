@@ -32,6 +32,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	}
 
 	videoRes := res.OriginalVideo
+	videoFile := res.VideoRequest
 
 	linkable, err := srv.requestRepo.Create(ctx, resource)
 	if err != nil {
@@ -43,6 +44,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion *request.Resource in service")
 	}
 
+	req.VideoRequest = videoFile
 	srvVideoId, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
 	if err != nil {
 		fields := map[string]interface{}{"status": "failed", "details": `Can't upload video to cloud'`}
