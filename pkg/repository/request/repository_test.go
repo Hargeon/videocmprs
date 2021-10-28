@@ -245,3 +245,117 @@ func TestRetrieve(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdate(t *testing.T) {
+	db, mock, err := sqlxmock.Newx()
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
+	}
+
+	cases := []struct {
+		name               string
+		id                 int64
+		fields             map[string]interface{}
+		mock               func()
+		expectedID         int64
+		expectedStatus     string
+		expectedDetails    string
+		expectedBitrate    int64
+		expectedResolution string
+		expectedRatio      string
+		errorPresent       bool
+	}{
+		{
+			name: "Should update request",
+			id:   1,
+			fields: map[string]interface{}{
+				"details": "Can't add video to database",
+				"status":  "failed",
+			},
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", TableName)).
+					WithArgs("Can't add video to database", "failed", 1).
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution, ratio FROM %s", TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlxmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution", "ratio"}).
+						AddRow(1, "failed", "Can't add video to database", 64000, "800:600", "4:3"))
+			},
+			expectedID:         1,
+			expectedStatus:     "failed",
+			expectedDetails:    "Can't add video to database",
+			expectedBitrate:    64000,
+			expectedResolution: "800:600",
+			expectedRatio:      "4:3",
+			errorPresent:       false,
+		},
+
+		{
+			name: "With bad db connection",
+			id:   1,
+			fields: map[string]interface{}{
+				"details": "Can't add video to database",
+				"status":  "failed",
+			},
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", TableName)).
+					WithArgs("Can't add video to database", "failed", 1).
+					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+			},
+			errorPresent: true,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+			repo := NewRepository(db)
+			linkable, err := repo.Update(context.Background(), testCase.id, testCase.fields)
+			if err != nil && !testCase.errorPresent {
+				t.Errorf("Unexpected error: %s\n", err.Error())
+			}
+
+			if err == nil && testCase.errorPresent {
+				t.Errorf("Should be error\n")
+			}
+
+			if err == nil {
+				request, ok := linkable.(*Resource)
+				if !ok {
+					t.Fatalf("Invalid type assertion for *request.Resource\n")
+				}
+
+				if request.ID != testCase.expectedID {
+					t.Errorf("Invalid id, expected: %d, got: %d\n",
+						testCase.expectedID, request.ID)
+				}
+
+				if request.Status != testCase.expectedStatus {
+					t.Errorf("Invalid status, expected: %s, got: %s\n",
+						testCase.expectedStatus, request.Status)
+				}
+
+				if request.Details != testCase.expectedDetails {
+					t.Errorf("Invalid details, expected: %s, got: %s\n",
+						testCase.expectedDetails, request.Details)
+				}
+
+				if request.Bitrate != testCase.expectedBitrate {
+					t.Errorf("Invalid bitrate, expected: %d, got: %d\n",
+						testCase.expectedBitrate, request.Bitrate)
+				}
+
+				if request.Resolution != testCase.expectedResolution {
+					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
+						testCase.expectedResolution, request.Resolution)
+				}
+
+				if request.Ratio != testCase.expectedRatio {
+					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
+						testCase.expectedRatio, request.Ratio)
+				}
+			}
+		})
+	}
+}

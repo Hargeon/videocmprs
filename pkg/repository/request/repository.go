@@ -34,7 +34,7 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 
 	var id int64
 	err := sq.Insert(TableName).
-		Columns("bitrate", "resolution", "ration", "user_id").
+		Columns("bitrate", "resolution", "ratio", "user_id").
 		Values(request.Bitrate, request.Resolution, request.Ratio, request.UserID).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar).
@@ -53,16 +53,19 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	query, args, err := sq.
+	err := sq.
 		Select("id", "status", "details", "bitrate", "resolution", "ratio").
 		From(TableName).
 		Where(sq.Eq{"id": id}).
-		ToSql()
+		PlaceholderFormat(sq.Dollar).
+		RunWith(repo.db).
+		QueryRowContext(c).
+		Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
+			&request.Resolution, &request.Ratio)
 	if err != nil {
 		return nil, err
 	}
 
-	err = repo.db.GetContext(c, request, query, args...)
 	return request, err
 }
 
