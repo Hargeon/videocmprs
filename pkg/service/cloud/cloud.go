@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	randLetterLength = 8
+	randLetterLength = 14
 	minLetterIndex   = 97  // 'a'
 	maxLetterIndex   = 122 // 'z'
 )
