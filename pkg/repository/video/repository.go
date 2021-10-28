@@ -1,3 +1,4 @@
+// Package video represent db connection to creating and retrieving video
 package video
 
 import (
@@ -11,14 +12,17 @@ import (
 
 const queryTimeOut = 5 * time.Second
 
+// Repository ...
 type Repository struct {
 	db *sqlx.DB
 }
 
+// NewRepository initialize repository
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
+// Create video in db
 func (r *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
 	video, ok := resource.(*Resource)
 	if !ok {
@@ -45,6 +49,7 @@ func (r *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (jso
 	return r.Retrieve(ctx, id)
 }
 
+// Retrieve video from db
 func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
@@ -64,6 +69,7 @@ func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, 
 	return video, err
 }
 
+// Update video TODO implement in future
 func (r *Repository) Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error) {
 	return nil, nil
 }
