@@ -28,6 +28,7 @@ type Resource struct {
 	VideoRequest *multipart.FileHeader
 }
 
+// ValidateResolution function validate resolution and ratio
 func ValidateResolution(fl validator.FieldLevel) bool {
 	res := fl.Field().String()
 
