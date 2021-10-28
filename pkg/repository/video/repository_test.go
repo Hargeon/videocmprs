@@ -23,13 +23,17 @@ func TestCreate(t *testing.T) {
 	}
 
 	cases := []struct {
-		name         string
-		video        jsonapi.Linkable
-		mock         func()
-		expectedId   int64
-		expectedSize int64
-		expectedName string
-		errorPresent bool
+		name               string
+		video              jsonapi.Linkable
+		mock               func()
+		expectedId         int64
+		expectedSize       int64
+		expectedBitrate    int64
+		expectedName       string
+		expectedResolution string
+		expectedRatio      string
+		expectedServiceId  string
+		errorPresent       bool
 	}{
 		{
 			name: "Should add video",
@@ -40,7 +44,7 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs("my_name.mkv", 1258000, 64000).
+					WithArgs("my_name.mkv", 1258000, 64000, "").
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).
 						AddRow(1))
 
@@ -49,10 +53,13 @@ func TestCreate(t *testing.T) {
 					WillReturnRows(sqlxmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution", "ratio", "service_id"}).
 						AddRow(1, "my_name.mkv", 1258000, 0, "", "", ""))
 			},
-			expectedId:   1,
-			expectedSize: 1258000,
-			expectedName: "my_name.mkv",
-			errorPresent: false,
+			expectedId:         1,
+			expectedSize:       1258000,
+			expectedName:       "my_name.mkv",
+			expectedResolution: "",
+			expectedRatio:      "",
+			expectedServiceId:  "",
+			errorPresent:       false,
 		},
 		{
 			name: "Should not add video",
@@ -63,22 +70,28 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs("qwe", 125, 78787).
+					WithArgs("qwe", 125, 78787, "").
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
-			expectedId:   0,
-			expectedSize: 0,
-			expectedName: "",
-			errorPresent: true,
+			expectedId:         0,
+			expectedSize:       0,
+			expectedName:       "",
+			expectedResolution: "",
+			expectedRatio:      "",
+			expectedServiceId:  "",
+			errorPresent:       true,
 		},
 		{
-			name:         "With invalid jsonapi.Linkable",
-			video:        &invalidLinkable{},
-			mock:         func() {},
-			expectedId:   0,
-			expectedSize: 0,
-			expectedName: "",
-			errorPresent: true,
+			name:               "With invalid jsonapi.Linkable",
+			video:              &invalidLinkable{},
+			mock:               func() {},
+			expectedId:         0,
+			expectedSize:       0,
+			expectedName:       "",
+			expectedResolution: "",
+			expectedRatio:      "",
+			expectedServiceId:  "",
+			errorPresent:       true,
 		},
 	}
 
@@ -112,6 +125,21 @@ func TestCreate(t *testing.T) {
 				if video.Size != testCase.expectedSize {
 					t.Errorf("Invalid size, expected: %d, got: %d\n", testCase.expectedSize, video.Size)
 				}
+
+				if video.Resolution != testCase.expectedResolution {
+					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
+						testCase.expectedResolution, video.Resolution)
+				}
+
+				if video.Ratio != testCase.expectedRatio {
+					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
+						testCase.expectedRatio, video.Ratio)
+				}
+
+				if video.ServiceId != testCase.expectedServiceId {
+					t.Errorf("Invalid ServiceID, expected: %s, got: %s\n",
+						testCase.expectedServiceId, video.ServiceId)
+				}
 			}
 
 			if err := mock.ExpectationsWereMet(); err != nil {
@@ -136,7 +164,7 @@ func TestRetrieve(t *testing.T) {
 		expectedBitrate    int64
 		expectedName       string
 		expectedResolution string
-		expectedRation     string
+		expectedRatio      string
 		expectedServiceId  string
 		errorPresent       bool
 	}{
@@ -154,7 +182,7 @@ func TestRetrieve(t *testing.T) {
 			expectedSize:       185000,
 			expectedBitrate:    789569,
 			expectedResolution: "700:600",
-			expectedRation:     "4:3",
+			expectedRatio:      "4:3",
 			expectedServiceId:  "qweqweqwqfqw",
 			errorPresent:       false,
 		},
@@ -210,9 +238,9 @@ func TestRetrieve(t *testing.T) {
 						testCase.expectedResolution, video.Resolution)
 				}
 
-				if video.Ratio != testCase.expectedRation {
+				if video.Ratio != testCase.expectedRatio {
 					t.Errorf("Invalid ration, expected: %s, got: %s\n",
-						testCase.expectedRation, video.Ratio)
+						testCase.expectedRatio, video.Ratio)
 				}
 
 				if video.ServiceId != testCase.expectedServiceId {

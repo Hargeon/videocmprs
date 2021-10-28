@@ -46,19 +46,24 @@ func (r *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (jso
 }
 
 func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
-	query, args, err := sq.Select("id", "name", "size", "bitrate", "resolution", "ratio", "service_id").
-		From(TableName).
-		Where(sq.Eq{"id": id}).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
-	if err != nil {
-		return nil, err
-	}
-
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
 	video := new(Resource)
-	err = r.db.QueryRowxContext(c, query, args...).StructScan(video)
+
+	err := sq.
+		Select("id", "name", "size", "bitrate", "resolution", "ratio", "service_id").
+		From(TableName).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(r.db).
+		QueryRowContext(c).
+		Scan(&video.ID, &video.Name, &video.Size, &video.Bitrate, &video.Resolution,
+			&video.Ratio, &video.ServiceId)
+
 	return video, err
+}
+
+func (r *Repository) Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error) {
+	return nil, nil
 }
