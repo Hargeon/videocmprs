@@ -48,6 +48,7 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 	return repo.Retrieve(ctx, id)
 }
 
+// Retrieve request from db
 func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
 	request := new(Resource)
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
@@ -69,6 +70,7 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 	return request, err
 }
 
+// Update request in db
 func (repo *Repository) Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error) {
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
