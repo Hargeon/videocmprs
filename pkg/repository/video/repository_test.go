@@ -38,60 +38,49 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Should add video",
 			video: &Resource{
-				Name:    "my_name.mkv",
-				Size:    1258000,
-				Bitrate: 64000,
+				Name:      "my_name.mkv",
+				Size:      1258000,
+				ServiceId: "mock_service_id",
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs("my_name.mkv", 1258000, 64000, "").
+					WithArgs("my_name.mkv", 1258000, "mock_service_id").
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).
 						AddRow(1))
 
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution, ratio, service_id FROM %s", TableName)).
 					WithArgs(1).
 					WillReturnRows(sqlxmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution", "ratio", "service_id"}).
-						AddRow(1, "my_name.mkv", 1258000, 0, "", "", ""))
+						AddRow(1, "my_name.mkv", 1258000, 0, "", "", "mock_service_id"))
 			},
 			expectedId:         1,
 			expectedSize:       1258000,
+			expectedBitrate:    0,
 			expectedName:       "my_name.mkv",
 			expectedResolution: "",
 			expectedRatio:      "",
-			expectedServiceId:  "",
+			expectedServiceId:  "mock_service_id",
 			errorPresent:       false,
 		},
 		{
 			name: "Should not add video",
 			video: &Resource{
-				Name:    "qwe",
-				Size:    125,
-				Bitrate: 78787,
+				Name:      "qwe",
+				Size:      125,
+				ServiceId: "mock_service_id",
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs("qwe", 125, 78787, "").
+					WithArgs("qwe", 125, "mock_service_id").
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
-			expectedId:         0,
-			expectedSize:       0,
-			expectedName:       "",
-			expectedResolution: "",
-			expectedRatio:      "",
-			expectedServiceId:  "",
-			errorPresent:       true,
+			errorPresent: true,
 		},
 		{
-			name:               "With invalid jsonapi.Linkable",
-			video:              &invalidLinkable{},
-			mock:               func() {},
-			expectedId:         0,
-			expectedSize:       0,
-			expectedName:       "",
-			expectedResolution: "",
-			expectedRatio:      "",
-			expectedServiceId:  "",
-			errorPresent:       true,
+			name:         "With invalid jsonapi.Linkable",
+			video:        &invalidLinkable{},
+			mock:         func() {},
+			errorPresent: true,
 		},
 	}
 
@@ -134,6 +123,11 @@ func TestCreate(t *testing.T) {
 				if video.Ratio != testCase.expectedRatio {
 					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
 						testCase.expectedRatio, video.Ratio)
+				}
+
+				if video.Bitrate != testCase.expectedBitrate {
+					t.Errorf("Invalid bitrate, expected: %d, got: %d\n",
+						testCase.expectedBitrate, video.Bitrate)
 				}
 
 				if video.ServiceId != testCase.expectedServiceId {
