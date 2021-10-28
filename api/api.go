@@ -4,6 +4,7 @@ package api
 import (
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
+	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -29,6 +30,8 @@ func (h *Handler) InitRoutes() *fiber.App {
 	v1.Use(middleware.AcceptHeader)
 	v1.Mount("/users", user.NewHandler(h.db).InitRoutes())
 	v1.Mount("/auth", auth.NewHandler(h.db).InitRoutes())
+	v1.Use(middleware.UserIdentify)
+	v1.Mount("/requests", request.NewHandler(h.db).InitRoutes())
 
 	return app
 }
