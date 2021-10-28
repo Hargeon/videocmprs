@@ -5,9 +5,9 @@ CREATE TABLE IF NOT EXISTS videos (
     name VARCHAR(255) NOT NULL,
     size BIGINT NOT NULL,
     bitrate BIGINT,
-    resolution varchar(255),
-    ratio varchar(255),
-    service_id varchar(255),
+    resolution varchar(255) NOT NULL DEFAULT '',
+    ratio varchar(255) NOT NULL DEFAULT '',
+    service_id varchar(255) NOT NULL,
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- +goose StatementEnd
