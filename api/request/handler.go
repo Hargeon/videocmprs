@@ -6,29 +6,23 @@ import (
 	reqrepo "github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
-	"github.com/Hargeon/videocmprs/pkg/service/cloud"
 	"github.com/Hargeon/videocmprs/pkg/service/request"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
 	"github.com/jmoiron/sqlx"
 	"net/http"
-	"os"
+	"regexp"
 )
 
 type Handler struct {
 	srv service.Creator
 }
 
-func NewHandler(db *sqlx.DB) *Handler {
+func NewHandler(db *sqlx.DB, cS service.CloudStorage) *Handler {
 	reqRepo := reqrepo.NewRepository(db)
 	vRepo := video.NewRepository(db)
-	storage := cloud.NewS3Storage(
-		os.Getenv("AWS_BUCKET_NAME"),
-		os.Getenv("AWS_REGION"),
-		os.Getenv("AWS_ACCESS_KEY"),
-		os.Getenv("AWS_SECRET_KEY"))
-	srv := request.NewService(reqRepo, vRepo, storage)
+	srv := request.NewService(reqRepo, vRepo, cS)
 	return &Handler{srv: srv}
 }
 
@@ -39,16 +33,29 @@ func (h *Handler) InitRoutes() *fiber.App {
 }
 
 func (h *Handler) create(c *fiber.Ctx) error {
+	uID, ok := c.Locals("user_id").(int64)
+	if !ok {
+		errors := []string{"Invalid user ID"}
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
 	file, err := c.FormFile("video")
 	if err != nil {
 		errors := []string{"Request does not include file"}
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
+
+	ok = h.isFile(file.Header.Values("Content-Type"))
+	if !ok {
+		errors := []string{"File is not a video"}
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
 	reqData := c.FormValue("requests")
 	buf := bytes.NewBufferString(reqData)
 	res := new(reqrepo.Resource)
 	if err := jsonapi.UnmarshalPayload(buf, res); err != nil {
-		errors := []string{"Bad request"}
+		errors := []string{"Invalid request params"}
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
@@ -70,7 +77,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 		Size: file.Size,
 	}
 
-	res.UserID = c.Locals("user_id").(int64)
+	res.UserID = uID
 
 	r, err := h.srv.Create(c.Context(), res)
 	if err != nil {
@@ -79,4 +86,22 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	}
 
 	return jsonapi.MarshalPayload(c.Status(http.StatusCreated), r)
+}
+
+func (h *Handler) isFile(types []string) bool {
+	re, err := regexp.Compile(`video/.+`)
+	if err != nil {
+		return false
+	}
+
+	var present bool
+	for _, cType := range types {
+		ok := re.MatchString(cType)
+		if ok {
+			present = true
+			break
+		}
+	}
+
+	return present
 }

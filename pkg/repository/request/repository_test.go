@@ -356,6 +356,10 @@ func TestUpdate(t *testing.T) {
 						testCase.expectedRatio, request.Ratio)
 				}
 			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s\n", err)
+			}
 		})
 	}
 }
