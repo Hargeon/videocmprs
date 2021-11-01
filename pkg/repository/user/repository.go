@@ -29,7 +29,7 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 		return nil, errors.New("invalid type assertion in repository")
 	}
 
-	query, args, err := sq.Insert(UserTableName).Columns("email", "password_hash").
+	query, args, err := sq.Insert(TableName).Columns("email", "password_hash").
 		Values(user.Email, user.Password).Suffix("RETURNING id").PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 
 // Retrieve user by id
 func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
-	query, args, err := sq.Select("id", "email").From(UserTableName).
+	query, args, err := sq.Select("id", "email").From(TableName).
 		Where(sq.Eq{"id": id}).Limit(1).PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
@@ -61,4 +61,22 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 	user := new(Resource)
 	err = repo.db.QueryRowxContext(c, query, args...).StructScan(user)
 	return user, err
+}
+
+// Exists function return id if user exists
+func (repo *Repository) Exists(ctx context.Context, email, password string) (int64, error) {
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
+	defer cancel()
+
+	var id int64
+	err := sq.
+		Select("id").
+		From(TableName).
+		Where(sq.And{sq.Eq{"email": email}, sq.Eq{"password_hash": password}}).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(repo.db).
+		QueryRowContext(c).
+		Scan(&id)
+
+	return id, err
 }

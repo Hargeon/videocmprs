@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/Hargeon/videocmprs/pkg/repository/auth"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
 	sqlxmock "github.com/zhashkevych/go-sqlxmock"
@@ -31,7 +30,7 @@ func TestExists(t *testing.T) {
 			},
 			mock: func() {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
@@ -46,7 +45,7 @@ func TestExists(t *testing.T) {
 			},
 			mock: func() {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check2@check.com", fmt.Sprintf("%x", hashPass)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},
@@ -58,7 +57,7 @@ func TestExists(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mock()
-			repo := auth.NewRepository(db)
+			repo := user.NewRepository(db)
 			srv := NewService(repo)
 			linkable, err := srv.GenerateToken(context.Background(), testCase.user)
 			if err != nil && !testCase.errorPresent {

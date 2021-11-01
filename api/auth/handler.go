@@ -3,10 +3,9 @@ package auth
 import (
 	"bytes"
 	"github.com/Hargeon/videocmprs/api/response"
-	"github.com/Hargeon/videocmprs/pkg/repository/auth"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service"
-	authsrv "github.com/Hargeon/videocmprs/pkg/service/auth"
+	"github.com/Hargeon/videocmprs/pkg/service/auth"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
@@ -19,8 +18,8 @@ type Handler struct {
 }
 
 func NewHandler(db *sqlx.DB) *Handler {
-	repo := auth.NewRepository(db)
-	srv := authsrv.NewService(repo)
+	repo := user.NewRepository(db)
+	srv := auth.NewService(repo)
 	return &Handler{srv: srv}
 }
 
@@ -55,5 +54,9 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 		errors := []string{err.Error()}
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
+	return nil
+}
+
+func (h *Handler) me(c *fiber.Ctx) error {
 	return nil
 }

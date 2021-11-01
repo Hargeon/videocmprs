@@ -114,7 +114,7 @@ func TestSignIn(t *testing.T) {
 			},
 			mock: func() {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 			},
@@ -138,7 +138,7 @@ func TestSignIn(t *testing.T) {
 			},
 			mock: func() {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},

@@ -135,11 +135,11 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				passHash := encryption.GenerateHash([]byte("123456789"))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", passHash)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.TableName)).
 					WithArgs(1).
 					WillReturnRows(sqlxmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
@@ -164,7 +164,7 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				passHash := encryption.GenerateHash([]byte("123456789"))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", passHash)).
 					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
 			},

@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// UserTableName is name of users table in db
-const UserTableName = "users"
+// TableName is name of users table in db
+const TableName = "users"
 
 // Resource represent users table in db
 type Resource struct {
