@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
+
 	"github.com/google/jsonapi"
 )
 
@@ -45,26 +47,32 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	}
 
 	req.VideoRequest = videoFile
-	srvVideoId, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
+	srvVideoID, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
+
 	if err != nil {
 		fields := map[string]interface{}{"status": "failed", "details": "Can't upload video to cloud"}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't upload video to cloud: %s, can't update request status: %s",
 				err.Error(), updateErr.Error())
 		}
+
 		return nil, err
 	}
 
-	videoRes.ServiceId = srvVideoId
+	videoRes.ServiceId = srvVideoID
 	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes)
+
 	if err != nil {
 		fields := map[string]interface{}{"status": "failed", "details": `Can't add video to database`}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't add video to database: %s, can't update request status: %s",
 				err, updateErr)
 		}
+
 		return nil, err
 	}
 
@@ -74,5 +82,6 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	}
 
 	req.OriginalVideo = updatedVideo
+
 	return req, nil
 }
