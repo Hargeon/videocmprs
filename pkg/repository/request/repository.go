@@ -4,13 +4,17 @@ package request
 import (
 	"context"
 	"errors"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/jsonapi"
 	"github.com/jmoiron/sqlx"
 	"time"
 )
 
-const queryTimeOut = 5 * time.Second
+const (
+	queryTimeOut = 5 * time.Second
+	pageSize     = 10
+)
 
 // Repository ...
 type Repository struct {
@@ -91,4 +95,49 @@ func (repo *Repository) Update(ctx context.Context, id int64, fields map[string]
 	}
 
 	return repo.Retrieve(ctx, reqId)
+}
+
+func (repo *Repository) RetrieveList(ctx context.Context, relationId int64, page int64) (jsonapi.Linkable, error) {
+	requests := &Resources{
+		page:     page,
+		resource: make([]*Resource, 0, page),
+	}
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
+	defer cancel()
+
+	var offset uint64
+	if page <= 1 {
+		offset = 0
+	} else {
+		offset = uint64(page - 1)
+	}
+
+	rows, err := sq.
+		Select("id", "status", "details", "bitrate", "resolution", "ratio").
+		From(TableName).
+		Where(sq.Eq{"user_id": relationId}).
+		OrderBy("created_at DESC").
+		PlaceholderFormat(sq.Dollar).
+		Limit(uint64(pageSize)).
+		Offset(offset).
+		RunWith(repo.db).
+		QueryContext(c)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		request := new(Resource)
+		err = rows.Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
+			&request.Resolution, &request.Ratio)
+		if err != nil {
+			return nil, err
+		}
+		requests.resource = append(requests.resource, request)
+	}
+	return requests, nil
 }

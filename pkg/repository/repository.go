@@ -15,6 +15,7 @@ type Retriever interface {
 }
 
 type Existable interface {
+	Retriever
 	Exists(ctx context.Context, email, password string) (int64, error)
 }
 
@@ -30,4 +31,10 @@ type Repository interface {
 type UpdaterRepository interface {
 	Repository
 	Updater
+}
+
+// change this
+type RequestRepository interface {
+	UpdaterRepository
+	RetrieveList(ctx context.Context, relationId int64, page int64) (jsonapi.Linkable, error)
 }
