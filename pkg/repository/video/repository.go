@@ -3,22 +3,23 @@ package video
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"time"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/jsonapi"
-	"github.com/jmoiron/sqlx"
-	"time"
 )
 
 const queryTimeOut = 5 * time.Second
 
 // Repository ...
 type Repository struct {
-	db *sqlx.DB
+	db *sql.DB
 }
 
 // NewRepository initialize repository
-func NewRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
@@ -35,7 +36,7 @@ func (r *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (jso
 	var id int64
 	err := sq.Insert(TableName).
 		Columns("name", "size", "service_id").
-		Values(video.Name, video.Size, video.ServiceId).
+		Values(video.Name, video.Size, video.ServiceID).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
@@ -57,14 +58,15 @@ func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, 
 	video := new(Resource)
 
 	err := sq.
-		Select("id", "name", "size", "bitrate", "resolution", "ratio", "service_id").
+		Select("id", "name", "size", "bitrate", "resolution_x",
+			"resolution_y", "ratio_x", "ratio_y", "service_id").
 		From(TableName).
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
 		QueryRowContext(c).
-		Scan(&video.ID, &video.Name, &video.Size, &video.Bitrate, &video.Resolution,
-			&video.Ratio, &video.ServiceId)
+		Scan(&video.ID, &video.Name, &video.Size, &video.Bitrate, &video.ResolutionX,
+			&video.ResolutionY, &video.RatioX, &video.RatioY, &video.ServiceID)
 
 	return video, err
 }

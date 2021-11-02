@@ -3,9 +3,10 @@ package video
 import (
 	"context"
 	"fmt"
-	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/jsonapi"
 )
 
 type invalidLinkable struct{}
@@ -17,62 +18,67 @@ func (r *invalidLinkable) JSONAPILinks() *jsonapi.Links {
 }
 
 func TestCreate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
 	cases := []struct {
-		name               string
-		video              jsonapi.Linkable
-		mock               func()
-		expectedId         int64
-		expectedSize       int64
-		expectedBitrate    int64
-		expectedName       string
-		expectedResolution string
-		expectedRatio      string
-		expectedServiceId  string
-		errorPresent       bool
+		name                string
+		video               jsonapi.Linkable
+		mock                func()
+		expectedID          int64
+		expectedSize        int64
+		expectedBitrate     int64
+		expectedName        string
+		expectedResolutionX int
+		expectedResolutionY int
+		expectedRatioX      int
+		expectedRatioY      int
+		expectedServiceID   string
+		errorPresent        bool
 	}{
 		{
 			name: "Should add video",
 			video: &Resource{
 				Name:      "my_name.mkv",
 				Size:      1258000,
-				ServiceId: "mock_service_id",
+				ServiceID: "mock_service_id",
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
 					WithArgs("my_name.mkv", 1258000, "mock_service_id").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution, ratio, service_id FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution", "ratio", "service_id"}).
-						AddRow(1, "my_name.mkv", 1258000, 0, "", "", "mock_service_id"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
+						AddRow(1, "my_name.mkv", 1258000, 0, 0, 0, 0, 0, "mock_service_id"))
 			},
-			expectedId:         1,
-			expectedSize:       1258000,
-			expectedBitrate:    0,
-			expectedName:       "my_name.mkv",
-			expectedResolution: "",
-			expectedRatio:      "",
-			expectedServiceId:  "mock_service_id",
-			errorPresent:       false,
+			expectedID:          1,
+			expectedSize:        1258000,
+			expectedBitrate:     0,
+			expectedName:        "my_name.mkv",
+			expectedResolutionX: 0,
+			expectedResolutionY: 0,
+
+			expectedRatioX:    0,
+			expectedRatioY:    0,
+			expectedServiceID: "mock_service_id",
+			errorPresent:      false,
 		},
 		{
 			name: "Should not add video",
 			video: &Resource{
 				Name:      "qwe",
 				Size:      125,
-				ServiceId: "mock_service_id",
+				ServiceID: "mock_service_id",
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
 					WithArgs("qwe", 125, "mock_service_id").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			errorPresent: true,
 		},
@@ -86,6 +92,7 @@ func TestCreate(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			testCase := testCase
 			testCase.mock()
 			repo := NewRepository(db)
 			linkable, err := repo.Create(context.Background(), testCase.video)
@@ -103,8 +110,8 @@ func TestCreate(t *testing.T) {
 					t.Fatalf("Invalid type assertion *video.Resource\n")
 				}
 
-				if video.ID != testCase.expectedId {
-					t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedId, video.ID)
+				if video.ID != testCase.expectedID {
+					t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedID, video.ID)
 				}
 
 				if video.Name != testCase.expectedName {
@@ -115,14 +122,24 @@ func TestCreate(t *testing.T) {
 					t.Errorf("Invalid size, expected: %d, got: %d\n", testCase.expectedSize, video.Size)
 				}
 
-				if video.Resolution != testCase.expectedResolution {
-					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
-						testCase.expectedResolution, video.Resolution)
+				if video.ResolutionX != testCase.expectedResolutionX {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionX, video.ResolutionX)
 				}
 
-				if video.Ratio != testCase.expectedRatio {
-					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
-						testCase.expectedRatio, video.Ratio)
+				if video.ResolutionY != testCase.expectedResolutionY {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionY, video.ResolutionY)
+				}
+
+				if video.RatioX != testCase.expectedRatioX {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioX, video.RatioX)
+				}
+
+				if video.RatioY != testCase.expectedRatioY {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioY, video.RatioY)
 				}
 
 				if video.Bitrate != testCase.expectedBitrate {
@@ -130,9 +147,9 @@ func TestCreate(t *testing.T) {
 						testCase.expectedBitrate, video.Bitrate)
 				}
 
-				if video.ServiceId != testCase.expectedServiceId {
+				if video.ServiceID != testCase.expectedServiceID {
 					t.Errorf("Invalid ServiceID, expected: %s, got: %s\n",
-						testCase.expectedServiceId, video.ServiceId)
+						testCase.expectedServiceID, video.ServiceID)
 				}
 			}
 
@@ -144,49 +161,53 @@ func TestCreate(t *testing.T) {
 }
 
 func TestRetrieve(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
 	cases := []struct {
-		name               string
-		id                 int64
-		mock               func()
-		expectedId         int64
-		expectedSize       int64
-		expectedBitrate    int64
-		expectedName       string
-		expectedResolution string
-		expectedRatio      string
-		expectedServiceId  string
-		errorPresent       bool
+		name                string
+		id                  int64
+		mock                func()
+		expectedID          int64
+		expectedSize        int64
+		expectedBitrate     int64
+		expectedName        string
+		expectedResolutionX int
+		expectedResolutionY int
+		expectedRatioX      int
+		expectedRatioY      int
+		expectedServiceID   string
+		errorPresent        bool
 	}{
 		{
 			name: "Should find video",
 			id:   1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution, ratio, service_id FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution", "ratio", "service_id"}).
-						AddRow(1, "check_name.mkv", 185000, 789569, "700:600", "4:3", "qweqweqwqfqw"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
+						AddRow(1, "my_name.mkv", 1258000, 789569, 700, 600, 4, 3, "mock_service_id"))
 			},
-			expectedId:         1,
-			expectedName:       "check_name.mkv",
-			expectedSize:       185000,
-			expectedBitrate:    789569,
-			expectedResolution: "700:600",
-			expectedRatio:      "4:3",
-			expectedServiceId:  "qweqweqwqfqw",
-			errorPresent:       false,
+			expectedID:          1,
+			expectedName:        "my_name.mkv",
+			expectedSize:        1258000,
+			expectedBitrate:     789569,
+			expectedResolutionX: 700,
+			expectedResolutionY: 600,
+			expectedRatioX:      4,
+			expectedRatioY:      3,
+			expectedServiceID:   "mock_service_id",
+			errorPresent:        false,
 		},
 		{
 			name: "Should not find video",
 			id:   1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution, ratio, service_id FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution", "ratio", "service_id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}))
 			},
 			errorPresent: true,
 		},
@@ -194,6 +215,7 @@ func TestRetrieve(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			testCase := testCase
 			testCase.mock()
 			repo := NewRepository(db)
 			linkable, err := repo.Retrieve(context.Background(), testCase.id)
@@ -211,8 +233,8 @@ func TestRetrieve(t *testing.T) {
 					t.Fatalf("Invalid type assertion *video.Resource\n")
 				}
 
-				if video.ID != testCase.expectedId {
-					t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedId, video.ID)
+				if video.ID != testCase.expectedID {
+					t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedID, video.ID)
 				}
 
 				if video.Name != testCase.expectedName {
@@ -227,19 +249,29 @@ func TestRetrieve(t *testing.T) {
 					t.Errorf("Invalid bitrate, expected: %d, got: %d\n", testCase.expectedBitrate, video.Bitrate)
 				}
 
-				if video.Resolution != testCase.expectedResolution {
-					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
-						testCase.expectedResolution, video.Resolution)
+				if video.ResolutionX != testCase.expectedResolutionX {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionX, video.ResolutionX)
 				}
 
-				if video.Ratio != testCase.expectedRatio {
-					t.Errorf("Invalid ration, expected: %s, got: %s\n",
-						testCase.expectedRatio, video.Ratio)
+				if video.ResolutionY != testCase.expectedResolutionY {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionY, video.ResolutionY)
 				}
 
-				if video.ServiceId != testCase.expectedServiceId {
+				if video.RatioX != testCase.expectedRatioX {
+					t.Errorf("Invalid ration, expected: %d, got: %d\n",
+						testCase.expectedRatioX, video.RatioX)
+				}
+
+				if video.RatioY != testCase.expectedRatioY {
+					t.Errorf("Invalid ration, expected: %d, got: %d\n",
+						testCase.expectedRatioY, video.RatioY)
+				}
+
+				if video.ServiceID != testCase.expectedServiceID {
 					t.Errorf("Invalid service id, expected: %s, got: %s\n",
-						testCase.expectedServiceId, video.ServiceId)
+						testCase.expectedServiceID, video.ServiceID)
 				}
 			}
 
