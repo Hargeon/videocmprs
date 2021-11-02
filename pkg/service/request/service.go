@@ -4,20 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/google/jsonapi"
+
+	"github.com/Hargeon/videocmprs/api/query"
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
-	"github.com/google/jsonapi"
 )
 
 type Service struct {
-	requestRepo  repository.UpdaterRepository
+	requestRepo  repository.RequestRepository
 	videoRepo    repository.UpdaterRepository
 	cloudStorage service.CloudStorage
 }
 
-func NewService(rRepo, vRepo repository.UpdaterRepository, cS service.CloudStorage) *Service {
+func NewService(rRepo repository.RequestRepository, vRepo repository.UpdaterRepository, cS service.CloudStorage) *Service {
 	return &Service{
 		requestRepo:  rRepo,
 		videoRepo:    vRepo,
@@ -75,4 +78,8 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 
 	req.OriginalVideo = updatedVideo
 	return req, nil
+}
+
+func (srv *Service) List(ctx context.Context, params query.Params) ([]jsonapi.Linkable, error) {
+	return nil, nil
 }
