@@ -47,7 +47,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	req.VideoRequest = videoFile
 	srvVideoId, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
 	if err != nil {
-		fields := map[string]interface{}{"status": "failed", "details": `Can't upload video to cloud`}
+		fields := map[string]interface{}{"status": "failed", "details": "Can't upload video to cloud"}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't upload video to cloud: %s, can't update request status: %s",

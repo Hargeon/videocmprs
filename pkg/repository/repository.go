@@ -22,12 +22,12 @@ type Updater interface {
 	Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error)
 }
 
-type Repository interface {
+type CreatorRetriever interface {
 	Creator
 	Retriever
 }
 
 type UpdaterRepository interface {
-	Repository
+	CreatorRetriever
 	Updater
 }
