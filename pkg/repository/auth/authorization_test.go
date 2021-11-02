@@ -3,13 +3,15 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/Hargeon/videocmprs/pkg/repository/user"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"testing"
+
+	"github.com/Hargeon/videocmprs/pkg/repository/user"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestExists(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -19,7 +21,7 @@ func TestExists(t *testing.T) {
 		email        string
 		password     string
 		mock         func()
-		expectedId   int64
+		expectedID   int64
 		errorPresent bool
 	}{
 		{
@@ -27,11 +29,11 @@ func TestExists(t *testing.T) {
 			email:    "check@check.com",
 			password: "qweqweqweqwe",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			expectedId:   1,
+			expectedID:   1,
 			errorPresent: false,
 		},
 		{
@@ -39,11 +41,11 @@ func TestExists(t *testing.T) {
 			email:    "check@check.com",
 			password: "qweqweqweqwe",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			expectedId:   0,
+			expectedID:   0,
 			errorPresent: true,
 		},
 	}
@@ -61,8 +63,8 @@ func TestExists(t *testing.T) {
 				t.Errorf("Should be error\n")
 			}
 
-			if id != testCase.expectedId {
-				t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedId, id)
+			if id != testCase.expectedID {
+				t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedID, id)
 			}
 		})
 	}
