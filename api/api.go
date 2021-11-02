@@ -2,15 +2,18 @@
 package api
 
 import (
+	"os"
+
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
 	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
 	"github.com/Hargeon/videocmprs/pkg/service/cloud"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jmoiron/sqlx"
-	"os"
 )
 
 type Handler struct {
@@ -26,6 +29,7 @@ func NewHandler(db *sqlx.DB) *Handler {
 func (h *Handler) InitRoutes() *fiber.App {
 	app := fiber.New()
 	app.Use(cors.New())
+	app.Use(logger.New())
 	api := app.Group("/api")
 
 	v1 := api.Group("/v1")
