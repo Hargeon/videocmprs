@@ -1,11 +1,11 @@
 package request
 
 import (
-	"github.com/Hargeon/videocmprs/pkg/repository/video"
-	"github.com/go-playground/validator/v10"
-	"github.com/google/jsonapi"
 	"mime/multipart"
-	"regexp"
+
+	"github.com/Hargeon/videocmprs/pkg/repository/video"
+
+	"github.com/google/jsonapi"
 )
 
 // TableName is table name in db
@@ -18,25 +18,16 @@ type Resource struct {
 	Status  string `jsonapi:"attr,status,omitempty"`
 	Details string `jsonapi:"attr,details,omitempty"`
 
-	Bitrate    int64  `jsonapi:"attr,bitrate" validate:"required"`
-	Resolution string `jsonapi:"attr,resolution" validate:"required,resolution"`
-	Ratio      string `jsonapi:"attr,ratio" validate:"required,resolution"`
+	Bitrate     int64 `jsonapi:"attr,bitrate" validate:"required"`
+	ResolutionX int   `jsonapi:"attr,resolution_x,omitempty"`
+	ResolutionY int   `jsonapi:"attr,resolution_y,omitempty"`
+	RatioX      int   `jsonapi:"attr,ratio_x,omitempty"`
+	RatioY      int   `jsonapi:"attr,ratio_y,omitempty"`
 
 	OriginalVideo  *video.Resource
 	ConvertedVideo *video.Resource
 
 	VideoRequest *multipart.FileHeader
-}
-
-// ValidateResolution function validate resolution and ratio
-func ValidateResolution(fl validator.FieldLevel) bool {
-	res := fl.Field().String()
-
-	re, err := regexp.Compile(`\A([1-9]+[0-9]*):([1-9]+[0-9]*)\z`)
-	if err != nil {
-		return false
-	}
-	return re.MatchString(res)
 }
 
 // JSONAPILinks ...
