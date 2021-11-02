@@ -1,8 +1,11 @@
 package user
 
 import (
-	"github.com/google/jsonapi"
+	"fmt"
+	"os"
 	"time"
+
+	"github.com/google/jsonapi"
 )
 
 // TableName is name of users table in db
@@ -21,6 +24,6 @@ type Resource struct {
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": "need add", // TODO need add link
+		"self": fmt.Sprintf("%s/api/vi/auth/me", os.Getenv("BASE_URL")), // TODO need add link
 	}
 }
