@@ -1,11 +1,13 @@
 package request
 
 import (
-	"github.com/Hargeon/videocmprs/pkg/repository/video"
-	"github.com/go-playground/validator/v10"
-	"github.com/google/jsonapi"
 	"mime/multipart"
 	"regexp"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/google/jsonapi"
+
+	"github.com/Hargeon/videocmprs/pkg/repository/video"
 )
 
 // TableName is table name in db
