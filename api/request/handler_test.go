@@ -5,11 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Hargeon/videocmprs/pkg/repository/request"
-	"github.com/Hargeon/videocmprs/pkg/repository/video"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -17,6 +12,13 @@ import (
 	"net/textproto"
 	"os"
 	"testing"
+
+	"github.com/Hargeon/videocmprs/pkg/repository/request"
+	"github.com/Hargeon/videocmprs/pkg/repository/video"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/jsonapi"
 )
 
 type cloudMock struct{}
@@ -29,7 +31,7 @@ func (c *cloudMock) Upload(ctx context.Context, header *multipart.FileHeader) (s
 }
 
 func TestCreate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -262,9 +264,11 @@ func TestCreate(t *testing.T) {
 				}
 
 				r := &request.Resource{
-					Bitrate:    64000,
-					Resolution: "800:600",
-					Ratio:      "4:3",
+					Bitrate:     64000,
+					ResolutionX: 800,
+					ResolutionY: 600,
+					RatioX:      4,
+					RatioY:      3,
 				}
 
 				bufReq := new(bytes.Buffer)
@@ -287,26 +291,26 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, "800:600", "4:3", 1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).
+					WithArgs(64000, 800, 600, 4, 3, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution, ratio FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution", "ratio"}).
-						AddRow(1, "original_in_review", "", 64000, "800:600", "4:3"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
 					WithArgs("test_video.mkv", 1441786, "mock_service_id").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution, ratio, service_id FROM %s", video.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution", "ratio", "service_id"}).
-						AddRow(1, "my_name.mkv", 1441786, 0, "", "", "mock_service_id"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
+						AddRow(1, "my_name.mkv", 1441786, 0, 0, 0, 0, 0, "mock_service_id"))
 			},
-			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio":"4:3","resolution":"800:600","status":"original_in_review"},"links":{"self":"need add"}}}` + "\n",
+			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review"},"links":{"self":"need add"}}}` + "\n",
 			expectedStatus: http.StatusCreated,
 		},
 		{
@@ -332,9 +336,11 @@ func TestCreate(t *testing.T) {
 				}
 
 				r := &request.Resource{
-					Bitrate:    64000,
-					Resolution: "800:600",
-					Ratio:      "4:3",
+					Bitrate:     64000,
+					ResolutionX: 800,
+					ResolutionY: 600,
+					RatioX:      4,
+					RatioY:      3,
 				}
 
 				bufReq := new(bytes.Buffer)
