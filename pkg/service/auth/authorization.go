@@ -17,7 +17,7 @@ type AuthorizationService struct {
 	repo repository.Existable
 }
 
-// NewService ...
+// NewService initialize AuthorizationService
 func NewService(repo repository.Existable) *AuthorizationService {
 	return &AuthorizationService{repo: repo}
 }
@@ -31,6 +31,7 @@ func (srv *AuthorizationService) GenerateToken(ctx context.Context, resource jso
 
 	hashPass := encryption.GenerateHash([]byte(usr.Password))
 	id, err := srv.repo.Exists(ctx, usr.Email, fmt.Sprintf("%x", hashPass))
+
 	if err != nil {
 		return nil, err
 	}
@@ -45,5 +46,6 @@ func (srv *AuthorizationService) GenerateToken(ctx context.Context, resource jso
 		Email: usr.Email,
 		Token: token,
 	}
+
 	return res, nil
 }

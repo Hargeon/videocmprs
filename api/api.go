@@ -2,20 +2,25 @@
 package api
 
 import (
+	"database/sql"
+	"os"
+
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
+	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
+	"github.com/Hargeon/videocmprs/pkg/service/cloud"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/jmoiron/sqlx"
 )
 
 type Handler struct {
-	db *sqlx.DB
+	db *sql.DB
 }
 
 // NewHandler returns new Handler
-func NewHandler(db *sqlx.DB) *Handler {
+func NewHandler(db *sql.DB) *Handler {
 	return &Handler{db: db}
 }
 
@@ -29,6 +34,15 @@ func (h *Handler) InitRoutes() *fiber.App {
 	v1.Use(middleware.AcceptHeader)
 	v1.Mount("/users", user.NewHandler(h.db).InitRoutes())
 	v1.Mount("/auth", auth.NewHandler(h.db).InitRoutes())
+	v1.Use(middleware.UserIdentify)
+
+	storage := cloud.NewS3Storage(
+		os.Getenv("AWS_BUCKET_NAME"),
+		os.Getenv("AWS_REGION"),
+		os.Getenv("AWS_ACCESS_KEY"),
+		os.Getenv("AWS_SECRET_KEY"))
+
+	v1.Mount("/requests", request.NewHandler(h.db, storage).InitRoutes())
 
 	return app
 }

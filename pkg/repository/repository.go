@@ -18,7 +18,16 @@ type Existable interface {
 	Exists(ctx context.Context, email, password string) (int64, error)
 }
 
-type UserRepository interface {
+type Updater interface {
+	Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error)
+}
+
+type CreatorRetriever interface {
 	Creator
 	Retriever
+}
+
+type UpdaterRepository interface {
+	CreatorRetriever
+	Updater
 }
