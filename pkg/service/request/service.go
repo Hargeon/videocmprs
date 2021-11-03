@@ -1,3 +1,4 @@
+// Package request uses for creating user request
 package request
 
 import (
@@ -13,12 +14,14 @@ import (
 	"github.com/google/jsonapi"
 )
 
+// Service for adding and changing requests
 type Service struct {
 	requestRepo  repository.UpdaterRepository
 	videoRepo    repository.UpdaterRepository
 	cloudStorage service.CloudStorage
 }
 
+// NewService initialize Service
 func NewService(rRepo, vRepo repository.UpdaterRepository, cS service.CloudStorage) *Service {
 	return &Service{
 		requestRepo:  rRepo,
@@ -27,6 +30,7 @@ func NewService(rRepo, vRepo repository.UpdaterRepository, cS service.CloudStora
 	}
 }
 
+// Create function creates request in db, uploads video to cloud, creates video in db
 func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
 	res, ok := resource.(*request.Resource)
 	if !ok {
@@ -47,6 +51,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	}
 
 	req.VideoRequest = videoFile
+	// upload video to cloud
 	srvVideoID, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
 
 	if err != nil {
