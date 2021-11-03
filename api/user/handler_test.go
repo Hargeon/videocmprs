@@ -4,19 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Hargeon/videocmprs/pkg/repository/user"
-	"github.com/Hargeon/videocmprs/pkg/service/encryption"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Hargeon/videocmprs/pkg/repository/user"
+	"github.com/Hargeon/videocmprs/pkg/service/encryption"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/jsonapi"
 )
 
 func TestCreate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -51,6 +53,7 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
 				}
+
 				return result
 			},
 			mock:           func() {},
@@ -71,6 +74,7 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
 				}
+
 				return reqBuf.Bytes()
 			},
 			mock:           func() {},
@@ -91,6 +95,7 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
 				}
+
 				return reqBuf.Bytes()
 			},
 			mock:           func() {},
@@ -111,6 +116,7 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
 				}
+
 				return reqBuf.Bytes()
 			},
 			mock:           func() {},
@@ -131,17 +137,18 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
 				}
+
 				return reqBuf.Bytes()
 			},
 			mock: func() {
 				passHash := encryption.GenerateHash([]byte("123456789"))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", passHash)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
 			expectedBody:   `{"data":{"type":"users","id":"1","attributes":{"email":"check@check.com"},"links":{"self":"need add"}}}` + "\n",
 			expectedStatus: http.StatusCreated,
@@ -164,9 +171,9 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				passHash := encryption.GenerateHash([]byte("123456789"))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", passHash)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			expectedBody:   `{"errors":[{"title":"sql: no rows in result set"}]}` + "\n",
 			expectedStatus: http.StatusInternalServerError,
