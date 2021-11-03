@@ -3,15 +3,17 @@ package user
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
+
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
-	"testing"
 )
 
 func TestCreate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -21,7 +23,7 @@ func TestCreate(t *testing.T) {
 		usr           jsonapi.Linkable
 		password      string
 		mock          func()
-		expectedId    int64
+		expectedID    int64
 		expectedEmail string
 		errorPresent  bool
 	}{
@@ -33,15 +35,15 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				passHash := encryption.GenerateHash([]byte("qjwpeqwpoekpqwe"))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", passHash)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
-			expectedId:    1,
+			expectedID:    1,
 			expectedEmail: "check@check.com",
 			errorPresent:  false,
 		},
@@ -53,11 +55,11 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				passHash := encryption.GenerateHash([]byte("qjwpeqwpoekpqwe"))
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.UserTableName)).
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("", fmt.Sprintf("%x", passHash)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			expectedId:    0,
+			expectedID:    0,
 			expectedEmail: "",
 			errorPresent:  true,
 		},
@@ -65,6 +67,7 @@ func TestCreate(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			testCase := testCase
 			testCase.mock()
 			repo := user.NewRepository(db)
 			srv := NewService(repo)
@@ -87,8 +90,8 @@ func TestCreate(t *testing.T) {
 					t.Fatalf("Invalid assertion\n")
 				}
 
-				if usr.ID != testCase.expectedId {
-					t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedId, usr.ID)
+				if usr.ID != testCase.expectedID {
+					t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedID, usr.ID)
 				}
 
 				if usr.Email != testCase.expectedEmail {
