@@ -2,22 +2,15 @@
 package cloud
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"math/rand"
-	"mime/multipart"
-	"time"
-)
-
-const (
-	randLetterLength = 14
-	minLetterIndex   = 97  // 'a'
-	maxLetterIndex   = 122 // 'z'
+	"github.com/google/uuid"
 )
 
 // AWSS3 represent aws s3 storage
@@ -26,10 +19,6 @@ type AWSS3 struct {
 	accessKey  string
 	secretKey  string
 	region     string
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }
 
 // NewS3Storage initialize *AWS3
@@ -49,39 +38,6 @@ func (cloud *AWSS3) Upload(ctx context.Context, header *multipart.FileHeader) (s
 		return "", err
 	}
 
-	sess, err := cloud.createSession()
-	if err != nil {
-		return "", err
-	}
-
-	uploader := s3manager.NewUploader(sess)
-
-	newFileName := cloud.generateName(header.Filename)
-	_, err = uploader.UploadWithContext(ctx, &s3manager.UploadInput{
-		Body:   file,
-		Bucket: aws.String(cloud.bucketName),
-		Key:    aws.String(newFileName),
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return newFileName, nil
-}
-
-// generateName for file in aws
-func (cloud *AWSS3) generateName(fileName string) string {
-	var letters []byte
-	buf := bytes.NewBuffer(letters)
-	for i := 0; i < randLetterLength; i++ {
-		buf.WriteByte(byte(minLetterIndex + (rand.Intn(maxLetterIndex - minLetterIndex))))
-	}
-	newName := fmt.Sprintf("original_%s_%s", buf.String(), fileName)
-	return newName
-}
-
-// createSession for aws
-func (cloud *AWSS3) createSession() (*session.Session, error) {
 	sess, err := session.NewSession(
 		&aws.Config{
 			Region: aws.String(cloud.region),
@@ -90,9 +46,23 @@ func (cloud *AWSS3) createSession() (*session.Session, error) {
 				cloud.secretKey,
 				""), // a token will be created when the session it's used.
 		})
+
 	if err != nil {
-		return nil, err
+		return "nil", err
 	}
 
-	return sess, nil
+	uploader := s3manager.NewUploader(sess)
+
+	newFileName := fmt.Sprintf("original_%s_%s", uuid.New().String(), header.Filename)
+	_, err = uploader.UploadWithContext(ctx, &s3manager.UploadInput{
+		Body:   file,
+		Bucket: aws.String(cloud.bucketName),
+		Key:    aws.String(newFileName),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return newFileName, nil
 }
