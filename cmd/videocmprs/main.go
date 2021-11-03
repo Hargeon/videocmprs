@@ -1,13 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"github.com/Hargeon/videocmprs/api"
-	_ "github.com/jackc/pgx/stdlib"
-	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/Hargeon/videocmprs/api"
+
+	_ "github.com/jackc/pgx/stdlib"
+	"github.com/joho/godotenv"
 )
 
 const port = ":3001"
@@ -21,11 +23,15 @@ func main() {
 	dsn := fmt.Sprintf("user=%s dbname=%s sslmode=%s host=%s port=%s password=%s",
 		os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_SSLMODE"),
 		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_PASS"))
-	db, err := sqlx.Connect("pgx", dsn)
+	db, err := sql.Open("pgx", dsn)
+
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+		log.Fatalln(err)
+	}
 
 	h := api.NewHandler(db)
 	app := h.InitRoutes()
