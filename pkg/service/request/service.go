@@ -61,7 +61,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, err
 	}
 
-	videoRes.ServiceId = srvVideoID
+	videoRes.ServiceID = srvVideoID
 	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes)
 
 	if err != nil {
