@@ -3,13 +3,13 @@ package user
 import (
 	"context"
 	"fmt"
-	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/jsonapi"
 )
 
-type notUser struct {
-}
+type notUser struct{}
 
 func (n *notUser) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
@@ -18,7 +18,7 @@ func (n *notUser) JSONAPILinks() *jsonapi.Links {
 }
 
 func TestCreate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -27,7 +27,7 @@ func TestCreate(t *testing.T) {
 		name          string
 		user          jsonapi.Linkable
 		mock          func()
-		expectedId    int64
+		expectedID    int64
 		expectedEmail string
 		errorPresent  bool
 	}{
@@ -40,13 +40,13 @@ func TestCreate(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s WHERE", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
-			expectedId:    1,
+			expectedID:    1,
 			expectedEmail: "check@check.com",
 			errorPresent:  false,
 		},
@@ -61,7 +61,7 @@ func TestCreate(t *testing.T) {
 					WithArgs("check@check.com", "").
 					WillReturnRows(mock.NewRows([]string{"id"}))
 			},
-			expectedId:    0,
+			expectedID:    0,
 			expectedEmail: "",
 			errorPresent:  true,
 		},
@@ -70,7 +70,7 @@ func TestCreate(t *testing.T) {
 			user: new(notUser),
 			mock: func() {
 			},
-			expectedId:    0,
+			expectedID:    0,
 			expectedEmail: "",
 			errorPresent:  true,
 		},
@@ -95,8 +95,8 @@ func TestCreate(t *testing.T) {
 					t.Fatalf("Invalid type assertion.\n")
 				}
 
-				if usr.ID != testCase.expectedId {
-					t.Errorf("Invalid user id, expected: %d, got: %d\n", testCase.expectedId, usr.ID)
+				if usr.ID != testCase.expectedID {
+					t.Errorf("Invalid user id, expected: %d, got: %d\n", testCase.expectedID, usr.ID)
 				}
 
 				if usr.Email != testCase.expectedEmail {
@@ -112,7 +112,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestRetrieve(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -131,7 +131,7 @@ func TestRetrieve(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s WHERE", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
 			expectedID:    1,
 			expectedEmail: "check@check.com",
@@ -143,7 +143,7 @@ func TestRetrieve(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s WHERE", TableName)).
 					WithArgs(58).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "email"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}))
 			},
 			expectedID:    0,
 			expectedEmail: "",
@@ -187,7 +187,7 @@ func TestRetrieve(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -207,7 +207,7 @@ func TestExists(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
 			expectedId:   1,
 			errorPresent: false,
@@ -219,7 +219,7 @@ func TestExists(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			expectedId:   0,
 			errorPresent: true,

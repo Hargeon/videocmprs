@@ -3,9 +3,10 @@ package request
 import (
 	"context"
 	"fmt"
-	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/jsonapi"
 )
 
 type invalidResource struct{}
@@ -17,62 +18,70 @@ func (r *invalidResource) JSONAPILinks() *jsonapi.Links {
 }
 
 func TestCreate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
 	cases := []struct {
-		name               string
-		mock               func()
-		req                jsonapi.Linkable
-		expectedID         int64
-		expectedStatus     string
-		expectedDetails    string
-		expectedBitrate    int64
-		expectedResolution string
-		expectedRatio      string
-		errorPresent       bool
+		name                string
+		mock                func()
+		req                 jsonapi.Linkable
+		expectedID          int64
+		expectedStatus      string
+		expectedDetails     string
+		expectedBitrate     int64
+		expectedResolutionX int
+		expectedResolutionY int
+		expectedRatioX      int
+		expectedRatioY      int
+		errorPresent        bool
 	}{
 		{
 			name: "Should add request to db",
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs(64000, "800:600", "4:3", 1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).
+					WithArgs(64000, 800, 600, 4, 3, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution, ratio FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution", "ratio"}).
-						AddRow(1, "original_in_review", "", 64000, "800:600", "4:3"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
 			},
 			req: &Resource{
-				UserID:     1,
-				Bitrate:    64000,
-				Resolution: "800:600",
-				Ratio:      "4:3",
+				UserID:      1,
+				Bitrate:     64000,
+				ResolutionX: 800,
+				ResolutionY: 600,
+				RatioX:      4,
+				RatioY:      3,
 			},
-			expectedID:         1,
-			expectedStatus:     "original_in_review",
-			expectedDetails:    "",
-			expectedBitrate:    64000,
-			expectedResolution: "800:600",
-			expectedRatio:      "4:3",
-			errorPresent:       false,
+			expectedID:          1,
+			expectedStatus:      "original_in_review",
+			expectedDetails:     "",
+			expectedBitrate:     64000,
+			expectedResolutionX: 800,
+			expectedResolutionY: 600,
+			expectedRatioX:      4,
+			expectedRatioY:      3,
+			errorPresent:        false,
 		},
 		{
 			name: "Should not add request to db",
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs(64000, "800:600", "4:3", 1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WithArgs(64000, 800, 600, 4, 3, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			req: &Resource{
-				UserID:     1,
-				Bitrate:    64000,
-				Resolution: "800:600",
-				Ratio:      "4:3",
+				UserID:      1,
+				Bitrate:     64000,
+				ResolutionX: 800,
+				ResolutionY: 600,
+				RatioX:      4,
+				RatioY:      3,
 			},
 			errorPresent: true,
 		},
@@ -87,6 +96,7 @@ func TestCreate(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			testCase := testCase
 			testCase.mock()
 			repo := NewRepository(db)
 			linkable, err := repo.Create(context.Background(), testCase.req)
@@ -124,14 +134,24 @@ func TestCreate(t *testing.T) {
 						testCase.expectedBitrate, request.Bitrate)
 				}
 
-				if request.Resolution != testCase.expectedResolution {
-					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
-						testCase.expectedResolution, request.Resolution)
+				if request.ResolutionX != testCase.expectedResolutionX {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionX, request.ResolutionX)
 				}
 
-				if request.Ratio != testCase.expectedRatio {
-					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
-						testCase.expectedRatio, request.Ratio)
+				if request.ResolutionY != testCase.expectedResolutionY {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionY, request.ResolutionY)
+				}
+
+				if request.RatioX != testCase.expectedRatioX {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioX, request.RatioX)
+				}
+
+				if request.RatioY != testCase.expectedRatioY {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioY, request.RatioY)
 				}
 			}
 
@@ -143,47 +163,51 @@ func TestCreate(t *testing.T) {
 }
 
 func TestRetrieve(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
 	cases := []struct {
-		name               string
-		id                 int64
-		mock               func()
-		expectedID         int64
-		expectedStatus     string
-		expectedDetails    string
-		expectedBitrate    int64
-		expectedResolution string
-		expectedRatio      string
-		errorPresent       bool
+		name                string
+		id                  int64
+		mock                func()
+		expectedID          int64
+		expectedStatus      string
+		expectedDetails     string
+		expectedBitrate     int64
+		expectedResolutionX int
+		expectedResolutionY int
+		expectedRatioX      int
+		expectedRatioY      int
+		errorPresent        bool
 	}{
 		{
 			name: "Should return request",
 			id:   1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution, ratio FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution", "ratio"}).
-						AddRow(1, "original_in_review", "", 1589875, "800:600", "4:3"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
+						AddRow(1, "original_in_review", "", 1589875, 800, 600, 4, 3))
 			},
-			expectedID:         1,
-			expectedStatus:     "original_in_review",
-			expectedDetails:    "",
-			expectedBitrate:    1589875,
-			expectedResolution: "800:600",
-			expectedRatio:      "4:3",
-			errorPresent:       false,
+			expectedID:          1,
+			expectedStatus:      "original_in_review",
+			expectedDetails:     "",
+			expectedBitrate:     1589875,
+			expectedResolutionX: 800,
+			expectedResolutionY: 600,
+			expectedRatioX:      4,
+			expectedRatioY:      3,
+			errorPresent:        false,
 		},
 		{
 			name: "Should not return request",
 			id:   1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution, ratio FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution", "ratio"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}))
 			},
 			errorPresent: true,
 		},
@@ -191,6 +215,7 @@ func TestRetrieve(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			testCase := testCase
 			testCase.mock()
 			repo := NewRepository(db)
 			linkable, err := repo.Retrieve(context.Background(), testCase.id)
@@ -228,14 +253,24 @@ func TestRetrieve(t *testing.T) {
 						testCase.expectedBitrate, request.Bitrate)
 				}
 
-				if request.Resolution != testCase.expectedResolution {
-					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
-						testCase.expectedResolution, request.Resolution)
+				if request.ResolutionX != testCase.expectedResolutionX {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionX, request.ResolutionX)
 				}
 
-				if request.Ratio != testCase.expectedRatio {
-					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
-						testCase.expectedRatio, request.Ratio)
+				if request.ResolutionY != testCase.expectedResolutionY {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionY, request.ResolutionY)
+				}
+
+				if request.RatioX != testCase.expectedRatioX {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioX, request.RatioX)
+				}
+
+				if request.RatioY != testCase.expectedRatioY {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioY, request.RatioY)
 				}
 			}
 
@@ -247,23 +282,25 @@ func TestRetrieve(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
 	cases := []struct {
-		name               string
-		id                 int64
-		fields             map[string]interface{}
-		mock               func()
-		expectedID         int64
-		expectedStatus     string
-		expectedDetails    string
-		expectedBitrate    int64
-		expectedResolution string
-		expectedRatio      string
-		errorPresent       bool
+		name                string
+		id                  int64
+		fields              map[string]interface{}
+		mock                func()
+		expectedID          int64
+		expectedStatus      string
+		expectedDetails     string
+		expectedBitrate     int64
+		expectedResolutionX int
+		expectedResolutionY int
+		expectedRatioX      int
+		expectedRatioY      int
+		errorPresent        bool
 	}{
 		{
 			name: "Should update request",
@@ -275,20 +312,22 @@ func TestUpdate(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", TableName)).
 					WithArgs("Can't add video to database", "failed", 1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution, ratio FROM %s", TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution", "ratio"}).
-						AddRow(1, "failed", "Can't add video to database", 64000, "800:600", "4:3"))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
+						AddRow(1, "failed", "Can't add video to database", 64000, 800, 600, 4, 3))
 			},
-			expectedID:         1,
-			expectedStatus:     "failed",
-			expectedDetails:    "Can't add video to database",
-			expectedBitrate:    64000,
-			expectedResolution: "800:600",
-			expectedRatio:      "4:3",
-			errorPresent:       false,
+			expectedID:          1,
+			expectedStatus:      "failed",
+			expectedDetails:     "Can't add video to database",
+			expectedBitrate:     64000,
+			expectedResolutionX: 800,
+			expectedResolutionY: 600,
+			expectedRatioX:      4,
+			expectedRatioY:      3,
+			errorPresent:        false,
 		},
 
 		{
@@ -301,7 +340,7 @@ func TestUpdate(t *testing.T) {
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", TableName)).
 					WithArgs("Can't add video to database", "failed", 1).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			errorPresent: true,
 		},
@@ -309,6 +348,7 @@ func TestUpdate(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
+			testCase := testCase
 			testCase.mock()
 			repo := NewRepository(db)
 			linkable, err := repo.Update(context.Background(), testCase.id, testCase.fields)
@@ -346,14 +386,24 @@ func TestUpdate(t *testing.T) {
 						testCase.expectedBitrate, request.Bitrate)
 				}
 
-				if request.Resolution != testCase.expectedResolution {
-					t.Errorf("Invalid resolution, expected: %s, got: %s\n",
-						testCase.expectedResolution, request.Resolution)
+				if request.ResolutionX != testCase.expectedResolutionX {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionX, request.ResolutionX)
 				}
 
-				if request.Ratio != testCase.expectedRatio {
-					t.Errorf("Invalid ratio, expected: %s, got: %s\n",
-						testCase.expectedRatio, request.Ratio)
+				if request.ResolutionY != testCase.expectedResolutionY {
+					t.Errorf("Invalid resolution, expected: %d, got: %d\n",
+						testCase.expectedResolutionY, request.ResolutionY)
+				}
+
+				if request.RatioX != testCase.expectedRatioX {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioX, request.RatioX)
+				}
+
+				if request.RatioY != testCase.expectedRatioY {
+					t.Errorf("Invalid ratio, expected: %d, got: %d\n",
+						testCase.expectedRatioY, request.RatioY)
 				}
 			}
 

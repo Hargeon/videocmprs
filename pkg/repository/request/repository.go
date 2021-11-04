@@ -3,26 +3,24 @@ package request
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"fmt"
+	"time"
+
+	"github.com/Hargeon/videocmprs/api/query"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/jsonapi"
-	"github.com/jmoiron/sqlx"
-	"time"
 )
 
-const (
-	queryTimeOut = 5 * time.Second
-	pageSize     = 10
-)
+const queryTimeOut = 5 * time.Second
 
-// Repository ...
+// Repository represent db connection for request table
 type Repository struct {
-	db *sqlx.DB
+	db *sql.DB
 }
 
-// NewRepository ...
-func NewRepository(db *sqlx.DB) *Repository {
+// NewRepository initialize Repository
+func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
@@ -38,13 +36,15 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 
 	var id int64
 	err := sq.Insert(TableName).
-		Columns("bitrate", "resolution", "ratio", "user_id").
-		Values(request.Bitrate, request.Resolution, request.Ratio, request.UserID).
+		Columns("bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "user_id").
+		Values(request.Bitrate, request.ResolutionX, request.ResolutionY, request.RatioX,
+			request.RatioY, request.UserID).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar).
 		RunWith(repo.db).
 		QueryRowContext(c).
 		Scan(&id)
+
 	if err != nil {
 		return nil, err
 	}
@@ -56,17 +56,19 @@ func (repo *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (
 func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
 	request := new(Resource)
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
+
 	defer cancel()
 
 	err := sq.
-		Select("id", "status", "details", "bitrate", "resolution", "ratio").
+		Select("id", "status", "details", "bitrate", "resolution_x", "resolution_y",
+			"ratio_x", "ratio_y").
 		From(TableName).
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(repo.db).
 		QueryRowContext(c).
 		Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
-			&request.Resolution, &request.Ratio)
+			&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +81,7 @@ func (repo *Repository) Update(ctx context.Context, id int64, fields map[string]
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	var reqId int64
+	var reqID int64
 	err := sq.
 		Update(TableName).
 		SetMap(fields).
@@ -88,56 +90,48 @@ func (repo *Repository) Update(ctx context.Context, id int64, fields map[string]
 		RunWith(repo.db).
 		PlaceholderFormat(sq.Dollar).
 		QueryRowContext(c).
-		Scan(&reqId)
+		Scan(&reqID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return repo.Retrieve(ctx, reqId)
+	return repo.Retrieve(ctx, reqID)
 }
 
-func (repo *Repository) RetrieveList(ctx context.Context, relationId int64, page int64) (jsonapi.Linkable, error) {
-	requests := &Resources{
-		page:     page,
-		resource: make([]*Resource, 0, page),
-	}
-	c, cancel := context.WithTimeout(ctx, queryTimeOut)
-	defer cancel()
-
-	var offset uint64
-	if page <= 1 {
-		offset = 0
-	} else {
-		offset = uint64(page - 1)
-	}
-
-	rows, err := sq.
-		Select("id", "status", "details", "bitrate", "resolution", "ratio").
-		From(TableName).
-		Where(sq.Eq{"user_id": relationId}).
-		OrderBy("created_at DESC").
-		PlaceholderFormat(sq.Dollar).
-		Limit(uint64(pageSize)).
-		Offset(offset).
-		RunWith(repo.db).
-		QueryContext(c)
-
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		request := new(Resource)
-		err = rows.Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
-			&request.Resolution, &request.Ratio)
-		if err != nil {
-			return nil, err
-		}
-		requests.resource = append(requests.resource, request)
-	}
-	return requests, nil
+func (repo *Repository) List(ctx context.Context, params *query.Params) ([]jsonapi.Linkable, error) {
+	//c, cancel := context.WithTimeout(ctx, queryTimeOut)
+	//defer cancel()
+	//
+	//requests := make([]*Resource, 0, params.PageSize)
+	//
+	//rows, err := sq.
+	//	Select("id", "status", "details", "bitrate", "resolution_x", "resolution_y",
+	//	"ratio_x", "ratio_y").
+	//	From(TableName).
+	//	Where(sq.Eq{"user_id": params.RelationID}).
+	//	OrderBy("created_at DESC").
+	//	PlaceholderFormat(sq.Dollar).
+	//	Limit(params.PageSize).
+	//	Offset(params.PageNumber).
+	//	RunWith(repo.db).
+	//	QueryContext(c)
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//defer rows.Close()
+	//
+	//for rows.Next() {
+	//	request := new(Resource)
+	//	err = rows.Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
+	//		&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	requests = append(requests, request)
+	//}
+	//return requests, nil
+	return nil, nil
 }

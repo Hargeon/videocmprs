@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS requests (
     details VARCHAR(255) NOT NULL DEFAULT '',
 
     bitrate BIGINT NOT NULL,
-    resolution varchar(255) NOT NULL,
-    ratio varchar(255) NOT NULL,
+    resolution_x INT NOT NULL,
+    resolution_y INT NOT NULL,
+    ratio_x INT NOT NULL,
+    ratio_y INT NOT NULL,
 
     original_file_id BIGINT,
     converted_file_id BIGINT,

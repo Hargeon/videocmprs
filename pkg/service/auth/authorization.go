@@ -5,10 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
 	"github.com/Hargeon/videocmprs/pkg/service/jwt"
+
 	"github.com/google/jsonapi"
 )
 
@@ -17,7 +19,7 @@ type Service struct {
 	repo repository.Existable
 }
 
-// NewService ...
+// NewService initialize Service
 func NewService(repo repository.Existable) *Service {
 	return &Service{repo: repo}
 }
@@ -31,6 +33,7 @@ func (srv *Service) GenerateToken(ctx context.Context, resource jsonapi.Linkable
 
 	hashPass := encryption.GenerateHash([]byte(usr.Password))
 	id, err := srv.repo.Exists(ctx, usr.Email, fmt.Sprintf("%x", hashPass))
+
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +48,13 @@ func (srv *Service) GenerateToken(ctx context.Context, resource jsonapi.Linkable
 		Email: usr.Email,
 		Token: token,
 	}
+
 	return res, nil
 }
 
 // Retrieve return user params
 func (srv *Service) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
 	res, err := srv.repo.Retrieve(ctx, id)
+
 	return res, err
 }

@@ -19,7 +19,7 @@ type Retriever interface {
 }
 
 type Paginator interface {
-	List(ctx context.Context, params query.Params) ([]jsonapi.Linkable, error)
+	List(ctx context.Context, params *query.Params) ([]jsonapi.Linkable, error)
 }
 
 type Tokenable interface {

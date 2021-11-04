@@ -1,4 +1,3 @@
 package video
 
-type Handler struct {
-}
+type Handler struct{}

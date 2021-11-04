@@ -3,14 +3,16 @@ package auth
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
-	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestExists(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
@@ -32,7 +34,7 @@ func TestExists(t *testing.T) {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
 			errorPresent: false,
 			tokenPresent: true,
@@ -47,7 +49,7 @@ func TestExists(t *testing.T) {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check2@check.com", fmt.Sprintf("%x", hashPass)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			errorPresent: true,
 			tokenPresent: false,
@@ -84,7 +86,6 @@ func TestExists(t *testing.T) {
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s\n", err)
 			}
-
 		})
 	}
 }

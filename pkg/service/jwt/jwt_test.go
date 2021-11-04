@@ -2,10 +2,11 @@ package jwt
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 func TestSignedString(t *testing.T) {
@@ -32,7 +33,7 @@ func TestSignedString(t *testing.T) {
 		t.Fatalf("Invalid type assertion for authClaims\n")
 	}
 
-	id := claims.Id
+	id := claims.ID
 	if id != expectedId {
 		t.Errorf("Invalid id, expected: %d, got: %d\n", expectedId, id)
 	}
@@ -80,7 +81,7 @@ func TestParseToken(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			claims := authClaims{
-				Id: testCase.id,
+				ID: testCase.id,
 				StandardClaims: jwt.StandardClaims{
 					IssuedAt:  testCase.timeFrom.Unix(),
 					ExpiresAt: testCase.timeFrom.Add(tokenTD).Unix(),

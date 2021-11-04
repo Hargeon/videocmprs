@@ -4,19 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Hargeon/videocmprs/pkg/repository/user"
-	"github.com/Hargeon/videocmprs/pkg/service/encryption"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/jsonapi"
-	sqlxmock "github.com/zhashkevych/go-sqlxmock"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Hargeon/videocmprs/pkg/repository/user"
+	"github.com/Hargeon/videocmprs/pkg/service/encryption"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/jsonapi"
 )
 
 func TestSignIn(t *testing.T) {
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlmock.New()
 
 	handler := NewHandler(db)
 	app := fiber.New()
@@ -116,7 +118,7 @@ func TestSignIn(t *testing.T) {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}).AddRow(1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
 			expectedStatus: http.StatusCreated,
 		},
@@ -140,7 +142,7 @@ func TestSignIn(t *testing.T) {
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
-					WillReturnRows(sqlxmock.NewRows([]string{"id"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   `{"errors":[{"title":"sql: no rows in result set"}]}` + "\n",

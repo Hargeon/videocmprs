@@ -1,3 +1,4 @@
+// Package request uses for creating user request
 package request
 
 import (
@@ -5,22 +6,24 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/jsonapi"
-
 	"github.com/Hargeon/videocmprs/api/query"
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
+
+	"github.com/google/jsonapi"
 )
 
+// Service for adding and changing requests
 type Service struct {
 	requestRepo  repository.RequestRepository
-	videoRepo    repository.UpdaterRepository
+	videoRepo    repository.VideoRepository
 	cloudStorage service.CloudStorage
 }
 
-func NewService(rRepo repository.RequestRepository, vRepo repository.UpdaterRepository, cS service.CloudStorage) *Service {
+// NewService initialize Service
+func NewService(rRepo repository.RequestRepository, vRepo repository.VideoRepository, cS service.CloudStorage) *Service {
 	return &Service{
 		requestRepo:  rRepo,
 		videoRepo:    vRepo,
@@ -28,6 +31,7 @@ func NewService(rRepo repository.RequestRepository, vRepo repository.UpdaterRepo
 	}
 }
 
+// Create function creates request in db, uploads video to cloud, creates video in db
 func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
 	res, ok := resource.(*request.Resource)
 	if !ok {
@@ -48,26 +52,33 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	}
 
 	req.VideoRequest = videoFile
-	srvVideoId, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
+	// upload video to cloud
+	srvVideoID, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
+
 	if err != nil {
-		fields := map[string]interface{}{"status": "failed", "details": `Can't upload video to cloud`}
+		fields := map[string]interface{}{"status": "failed", "details": "Can't upload video to cloud"}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't upload video to cloud: %s, can't update request status: %s",
 				err.Error(), updateErr.Error())
 		}
+
 		return nil, err
 	}
 
-	videoRes.ServiceId = srvVideoId
+	videoRes.ServiceID = srvVideoID
 	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes)
+
 	if err != nil {
 		fields := map[string]interface{}{"status": "failed", "details": `Can't add video to database`}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+
 		if updateErr != nil {
 			return nil, fmt.Errorf("can't add video to database: %s, can't update request status: %s",
 				err, updateErr)
 		}
+
 		return nil, err
 	}
 
@@ -77,9 +88,10 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	}
 
 	req.OriginalVideo = updatedVideo
+
 	return req, nil
 }
 
-func (srv *Service) List(ctx context.Context, params query.Params) ([]jsonapi.Linkable, error) {
+func (srv *Service) List(ctx context.Context, params *query.Params) ([]jsonapi.Linkable, error) {
 	return nil, nil
 }

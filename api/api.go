@@ -2,26 +2,26 @@
 package api
 
 import (
+	"database/sql"
 	"os"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
 	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
 	"github.com/Hargeon/videocmprs/pkg/service/cloud"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/jmoiron/sqlx"
 )
 
 type Handler struct {
-	db *sqlx.DB
+	db *sql.DB
 }
 
 // NewHandler returns new Handler
-func NewHandler(db *sqlx.DB) *Handler {
+func NewHandler(db *sql.DB) *Handler {
 	return &Handler{db: db}
 }
 
