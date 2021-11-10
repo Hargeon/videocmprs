@@ -11,6 +11,8 @@ import (
 // TableName is name of users table in db
 const TableName = "users"
 
+var _ jsonapi.Linkable = (*Resource)(nil)
+
 // Resource represent users table in db
 type Resource struct {
 	ID                   int64  `jsonapi:"primary,users" db:"id"`
@@ -24,6 +26,6 @@ type Resource struct {
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("%s/api/vi/auth/me", os.Getenv("BASE_URL")), // TODO need add link
+		"self": fmt.Sprintf("%s/api/vi/auth/me", os.Getenv("BASE_URL")),
 	}
 }
