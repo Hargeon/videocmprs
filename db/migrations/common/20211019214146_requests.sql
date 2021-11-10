@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS requests (
     id BIGSERIAL NOT NULL UNIQUE PRIMARY KEY,
     user_id BIGINT REFERENCES users,
+    video_name VARCHAR(255) NOT NULL DEFAULT '',
     status VARCHAR(255) NOT NULL DEFAULT 'original_in_review',
     details VARCHAR(255) NOT NULL DEFAULT '',
 

@@ -3,29 +3,32 @@ package request
 import (
 	"mime/multipart"
 
-	"github.com/google/jsonapi"
-
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
+
+	"github.com/google/jsonapi"
 )
 
 // TableName is table name in db
 const TableName = "requests"
 
+var _ jsonapi.Linkable = (*Resource)(nil)
+
 // Resource represent requests in db
 type Resource struct {
-	ID      int64 `jsonapi:"primary,requests"`
-	UserID  int64
-	Status  string `jsonapi:"attr,status,omitempty"`
-	Details string `jsonapi:"attr,details,omitempty"`
+	ID        int64 `jsonapi:"primary,requests"`
+	UserID    int64
+	VideoName string `jsonapi:"attr,video_name"`
+	Status    string `jsonapi:"attr,status,omitempty"`
+	Details   string `jsonapi:"attr,details,omitempty"`
 
-	Bitrate     int64 `jsonapi:"attr,bitrate" validate:"required"`
-	ResolutionX int   `jsonapi:"attr,resolution_x,omitempty"`
-	ResolutionY int   `jsonapi:"attr,resolution_y,omitempty"`
-	RatioX      int   `jsonapi:"attr,ratio_x,omitempty"`
-	RatioY      int   `jsonapi:"attr,ratio_y,omitempty"`
+	Bitrate     int64 `jsonapi:"attr,bitrate"`
+	ResolutionX int   `jsonapi:"attr,resolution_x"`
+	ResolutionY int   `jsonapi:"attr,resolution_y"`
+	RatioX      int   `jsonapi:"attr,ratio_x"`
+	RatioY      int   `jsonapi:"attr,ratio_y"`
 
-	OriginalVideo  *video.Resource
-	ConvertedVideo *video.Resource
+	OriginalVideo  *video.Resource `jsonapi:"relation,original_video,omitempty"`
+	ConvertedVideo *video.Resource `jsonapi:"relation,converted_video,omitempty"`
 
 	VideoRequest *multipart.FileHeader
 }
