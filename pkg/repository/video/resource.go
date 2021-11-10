@@ -1,11 +1,15 @@
 package video
 
 import (
+	"database/sql"
+
 	"github.com/google/jsonapi"
 )
 
 // TableName is name of table in db
 const TableName = "videos"
+
+var _ jsonapi.Linkable = (*Resource)(nil)
 
 // Resource represent video in db
 type Resource struct {
@@ -18,6 +22,16 @@ type Resource struct {
 	RatioX      int    `jsonapi:"attr,ratio_x,omitempty"`
 	RatioY      int    `jsonapi:"attr,ratio_y,omitempty"`
 	ServiceID   string
+
+	IDDB          sql.NullInt64
+	NameDB        sql.NullString
+	SizeDB        sql.NullInt64
+	BitrateDB     sql.NullInt64
+	ResolutionXDB sql.NullInt32
+	ResolutionYDB sql.NullInt32
+	RatioXDB      sql.NullInt32
+	RatioYDB      sql.NullInt32
+	ServiceIDDB   sql.NullString
 }
 
 // JSONAPILinks ...
