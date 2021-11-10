@@ -51,11 +51,12 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion *request.Resource in service")
 	}
 
-	req.VideoRequest = videoFile
 	// upload video to cloud
+	req.VideoRequest = videoFile
 	srvVideoID, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
 
 	if err != nil {
+		// update request status
 		fields := map[string]interface{}{"status": "failed", "details": "Can't upload video to cloud"}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 
@@ -67,10 +68,12 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, err
 	}
 
+	// create video in db
 	videoRes.ServiceID = srvVideoID
 	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes)
 
 	if err != nil {
+		// update request status
 		fields := map[string]interface{}{"status": "failed", "details": `Can't add video to database`}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 
@@ -87,11 +90,30 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion *video.Resource in service after video update")
 	}
 
+	// add original_file_id in request
+	fields := map[string]interface{}{"original_file_id": updatedVideo.ID}
+	linkable, err = srv.requestRepo.Update(ctx, req.ID, fields)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req, ok = linkable.(*request.Resource)
+	if !ok {
+		return nil, errors.New("invalid type assertion")
+	}
+
 	req.OriginalVideo = updatedVideo
 
 	return req, nil
 }
 
-func (srv *Service) List(ctx context.Context, params *query.Params) ([]jsonapi.Linkable, error) {
-	return nil, nil
+// List returns []*request.Resource
+func (srv *Service) List(ctx context.Context, params *query.Params) ([]interface{}, error) {
+	requests, err := srv.requestRepo.List(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return requests, nil
 }

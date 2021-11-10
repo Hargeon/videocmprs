@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"testing"
 
+	"github.com/Hargeon/videocmprs/api/query"
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 
@@ -51,6 +52,7 @@ func TestCreate(t *testing.T) {
 		expectedRequestResolutionY int
 		expectedRequestRatioX      int
 		expectedRequestRatioY      int
+		expectedRequestVideoName   string
 
 		expectedOriginalVideoId          int64
 		expectedOriginalVideoSize        int64
@@ -79,10 +81,11 @@ func TestCreate(t *testing.T) {
 				ResolutionY: 600,
 				RatioX:      4,
 				RatioY:      3,
+				VideoName:   "new_video",
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			errorPresent: true,
@@ -96,20 +99,21 @@ func TestCreate(t *testing.T) {
 				ResolutionY: 600,
 				RatioX:      4,
 				RatioY:      3,
+				VideoName:   "new_video",
 				VideoRequest: &multipart.FileHeader{
 					Filename: "failed",
 				},
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
 					WithArgs(`Can't upload video to cloud`, "failed", 1).
@@ -126,29 +130,30 @@ func TestCreate(t *testing.T) {
 				ResolutionY: 600,
 				RatioX:      4,
 				RatioY:      3,
+				VideoName:   "new_video",
 				VideoRequest: &multipart.FileHeader{
 					Filename: "failed",
 				},
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
 					WithArgs(`Can't upload video to cloud`, "failed", 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "failed", "Can't upload video to cloud", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "failed", "Can't upload video to cloud", 64000, 800, 600, 4, 3, "new_video"))
 			},
 			errorPresent: true,
 		},
@@ -161,6 +166,7 @@ func TestCreate(t *testing.T) {
 				ResolutionY: 600,
 				RatioX:      4,
 				RatioY:      3,
+				VideoName:   "new_video",
 				VideoRequest: &multipart.FileHeader{
 					Filename: "good",
 				},
@@ -172,14 +178,14 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
 					WithArgs("my_name.mkv", 1258000, "mock_service_id").
@@ -200,6 +206,7 @@ func TestCreate(t *testing.T) {
 				ResolutionY: 600,
 				RatioX:      4,
 				RatioY:      3,
+				VideoName:   "new_video",
 				VideoRequest: &multipart.FileHeader{
 					Filename: "good",
 				},
@@ -211,14 +218,14 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
 					WithArgs("my_name.mkv", 1258000, "mock_service_id").
@@ -228,10 +235,10 @@ func TestCreate(t *testing.T) {
 					WithArgs("Can't add video to database", "failed", 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "failed", "Can't add video to database", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "failed", "Can't add video to database", 64000, 800, 600, 4, 3, "new_video"))
 			},
 			errorPresent: true,
 		},
@@ -244,6 +251,7 @@ func TestCreate(t *testing.T) {
 				ResolutionY: 600,
 				RatioX:      4,
 				RatioY:      3,
+				VideoName:   "new_video",
 				VideoRequest: &multipart.FileHeader{
 					Filename: "good",
 				},
@@ -255,14 +263,14 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
 					WithArgs("my_name.mkv", 1258000, "mock_service_id").
@@ -273,6 +281,15 @@ func TestCreate(t *testing.T) {
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
 						AddRow(1, "my_name.mkv", 1258000, 0, 0, 0, 0, 0, "mock_service_id"))
+
+				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 			},
 
 			expectedRequestId:          1,
@@ -283,6 +300,7 @@ func TestCreate(t *testing.T) {
 			expectedRequestResolutionY: 600,
 			expectedRequestRatioX:      4,
 			expectedRequestRatioY:      3,
+			expectedRequestVideoName:   "new_video",
 
 			expectedOriginalVideoId:          1,
 			expectedOriginalVideoSize:        1258000,
@@ -361,6 +379,11 @@ func TestCreate(t *testing.T) {
 						testCase.expectedRequestRatioY, req.RatioY)
 				}
 
+				if req.VideoName != testCase.expectedRequestVideoName {
+					t.Errorf("Invalid reqest name, expected: %s, got: %s\n",
+						testCase.expectedRequestVideoName, req.VideoName)
+				}
+
 				originVideo := req.OriginalVideo
 				if originVideo.ID != testCase.expectedOriginalVideoId {
 					t.Errorf("Invalid original video id, expected: %d, got: %d\n",
@@ -405,6 +428,104 @@ func TestCreate(t *testing.T) {
 				if originVideo.ServiceID != testCase.expectedOriginalVideoServiceId {
 					t.Errorf("Invalid original service id, expected: %s, got: %s\n",
 						testCase.expectedOriginalVideoServiceId, originVideo.ServiceID)
+				}
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s\n", err)
+			}
+		})
+	}
+}
+
+func TestList(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
+	}
+
+	cases := []struct {
+		name         string
+		params       *query.Params
+		mock         func()
+		expectedLen  int
+		errorPresent bool
+	}{
+		{
+			name: "Zero requests",
+			params: &query.Params{
+				RelationID: 1,
+				PageNumber: 0,
+				PageSize:   10,
+			},
+			mock: func() {
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}))
+			},
+			expectedLen:  0,
+			errorPresent: false,
+		},
+
+		{
+			name: "One request",
+			params: &query.Params{
+				RelationID: 1,
+				PageNumber: 0,
+				PageSize:   10,
+			},
+			mock: func() {
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
+						1, "", "", 64000, 800, 600, 4, 3, "new_video", 1, "new_video", 15000,
+						78000, 1200, 800, 6, 5, "new_service_id", 2, "converted_video", 12000, 64000,
+						800, 600, 4, 3, "converted_service_id"))
+			},
+			expectedLen:  1,
+			errorPresent: false,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+
+			rRepo := request.NewRepository(db)
+			vRepo := video.NewRepository(db)
+			cs := new(cloudMock)
+			srv := NewService(rRepo, vRepo, cs)
+			res, err := srv.List(context.Background(), testCase.params)
+			if err != nil && !testCase.errorPresent {
+				t.Errorf("Unexpected error: %s\n", err.Error())
+			}
+
+			if err == nil && testCase.errorPresent {
+				t.Errorf("Should be error\n")
+			}
+
+			if err == nil {
+				if len(res) != testCase.expectedLen {
+					t.Fatalf("Invalid number of requests, expected: %d, got: %d\n",
+						testCase.expectedLen, len(res))
 				}
 			}
 
