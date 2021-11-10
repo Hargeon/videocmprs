@@ -6,14 +6,14 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/jsonapi"
-
 	"github.com/Hargeon/videocmprs/api/response"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service"
 	usersrv "github.com/Hargeon/videocmprs/pkg/service/user"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/jsonapi"
 )
 
 type Handler struct {
