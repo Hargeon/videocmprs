@@ -34,7 +34,7 @@ func NewHandler(db *sql.DB, cS service.CloudStorage) *Handler {
 func (h *Handler) InitRoutes() *fiber.App {
 	router := fiber.New()
 	router.Post("/", h.create)
-	router.Get("/", h.retrieveList)
+	router.Get("/", h.list)
 
 	return router
 }
@@ -74,6 +74,8 @@ func (h *Handler) create(c *fiber.Ctx) error {
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
+	res.VideoName = file.Filename
+
 	validation := validator.New()
 
 	if err = validation.Struct(res); err != nil {
@@ -101,7 +103,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	return jsonapi.MarshalPayload(c.Status(http.StatusCreated), r)
 }
 
-func (h *Handler) retrieveList(c *fiber.Ctx) error {
+func (h *Handler) list(c *fiber.Ctx) error {
 	uID, ok := c.Locals("user_id").(int64)
 
 	if !ok {
@@ -114,16 +116,20 @@ func (h *Handler) retrieveList(c *fiber.Ctx) error {
 	pageNumI, err := strconv.Atoi(pageNumS)
 
 	if err != nil {
-		errors := []string{"Invalid page params"}
+		errors := []string{"Invalid page number params"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
-	pageSizeS := c.Query("page[size]", "0")
+	if pageNumI == 1 {
+		pageNumI = 0
+	}
+
+	pageSizeS := c.Query("page[size]", "10")
 	pageSizeI, err := strconv.Atoi(pageSizeS)
 
 	if err != nil {
-		errors := []string{"Invalid page params"}
+		errors := []string{"Invalid page size params"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
@@ -139,7 +145,7 @@ func (h *Handler) retrieveList(c *fiber.Ctx) error {
 	if err != nil {
 		errors := []string{err.Error()}
 
-		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
 
 	return jsonapi.MarshalPayload(c.Status(http.StatusOK), res)

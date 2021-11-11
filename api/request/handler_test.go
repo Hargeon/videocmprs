@@ -300,14 +300,14 @@ func TestCreate(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
-					WithArgs(64000, 800, 600, 4, 3, 1).
+					WithArgs(64000, 800, 600, 4, 3, 1, "test_video.mkv").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y FROM %s", request.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y"}).
-						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "test_video.mkv"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
 					WithArgs("test_video.mkv", 1441786, "mock_service_id").
@@ -318,8 +318,17 @@ func TestCreate(t *testing.T) {
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
 						AddRow(1, "my_name.mkv", 1441786, 0, 0, 0, 0, 0, "mock_service_id"))
+
+				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "test_video.mkv"))
 			},
-			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review"},"links":{"self":"need add"}}}` + "\n",
+			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review","video_name":"test_video.mkv"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}},"included":[{"type":"videos","id":"1","attributes":{"name":"my_name.mkv","size":1441786},"links":{"self":"need add"}}]}` + "\n",
 			expectedStatus: http.StatusCreated,
 		},
 		{
@@ -434,6 +443,193 @@ func TestIsFile(t *testing.T) {
 			if result != testCase.expectedResult {
 				t.Errorf("Invalid result, expectedL %v, got: %v\n",
 					testCase.expectedResult, result)
+			}
+		})
+	}
+}
+
+func TestList(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
+	}
+
+	h := NewHandler(db, new(cloudMock))
+
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user_id", int64(1))
+
+		return c.Next()
+	})
+	app.Get("/requests", h.list)
+
+	cases := []struct {
+		name           string
+		mock           func()
+		requestMock    func() *http.Request
+		expectedBody   string
+		expectedStatus int
+	}{
+		{
+			name: "Invalid page number",
+			mock: func() {},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/requests?page[number]=qwe&page[size]=5", nil)
+
+				return req
+			},
+			expectedBody:   `{"errors":[{"title":"Invalid page number params"}]}` + "\n",
+			expectedStatus: http.StatusBadRequest,
+		},
+
+		{
+			name: "Invalid page size",
+			mock: func() {},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/requests?page[number]=5&page[size]=qwqwe", nil)
+
+				return req
+			},
+			expectedBody:   `{"errors":[{"title":"Invalid page size params"}]}` + "\n",
+			expectedStatus: http.StatusBadRequest,
+		},
+
+		{
+			name: "Zero requests",
+			mock: func() {
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}))
+			},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/requests?page[number]=1&page[size]=10", nil)
+
+				return req
+			},
+			expectedBody:   `{"data":[]}` + "\n",
+			expectedStatus: http.StatusOK,
+		},
+
+		{
+			name: "Without origin and converted video",
+			mock: func() {
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
+						1, "", "", 64000, 800, 600, 4, 3, "new_video", nil, nil, nil,
+						nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil))
+			},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/requests?page[number]=1&page[size]=10", nil)
+
+				return req
+			},
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"links":{"self":"need add"}}]}` + "\n",
+			expectedStatus: http.StatusOK,
+		},
+
+		{
+			name: "With origin video",
+			mock: func() {
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
+						1, "", "", 64000, 800, 600, 4, 3, "new_video", 1, "new_video", 15000,
+						78000, 1200, 800, 6, 5, "new_service_id", nil, nil, nil, nil, nil, nil, nil, nil, nil))
+			},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/requests?page[number]=1&page[size]=10", nil)
+
+				return req
+			},
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"need add"}}]}` + "\n",
+			expectedStatus: http.StatusOK,
+		},
+
+		{
+			name: "With origin and converted video",
+			mock: func() {
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
+						1, "", "", 64000, 800, 600, 4, 3, "new_video", 1, "new_video", 15000,
+						78000, 1200, 800, 6, 5, "new_service_id", 2, "converted_video", 12000, 64000,
+						800, 600, 4, 3, "converted_service_id"))
+			},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/requests?page[number]=1&page[size]=10", nil)
+
+				return req
+			},
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"need add"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"self":"need add"}}]}` + "\n",
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+			req := testCase.requestMock()
+
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatalf("Unexpected error when creating stub request, error: %s\n", err.Error())
+			}
+
+			if resp.StatusCode != testCase.expectedStatus {
+				t.Errorf("Invalid status code, expected: %d, got: %d\n",
+					testCase.expectedStatus, resp.StatusCode)
+			}
+
+			resBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("Unexpected error when reading response body, error: %s\n", err.Error())
+			}
+
+			if string(resBody) != testCase.expectedBody {
+				t.Errorf("Invalid body,\nexpected: %#v\ngot: %#v\n",
+					testCase.expectedBody, string(resBody))
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s\n", err)
 			}
 		})
 	}

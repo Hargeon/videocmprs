@@ -21,11 +21,11 @@ type Resource struct {
 	Status    string `jsonapi:"attr,status,omitempty"`
 	Details   string `jsonapi:"attr,details,omitempty"`
 
-	Bitrate     int64 `jsonapi:"attr,bitrate"`
-	ResolutionX int   `jsonapi:"attr,resolution_x"`
-	ResolutionY int   `jsonapi:"attr,resolution_y"`
-	RatioX      int   `jsonapi:"attr,ratio_x"`
-	RatioY      int   `jsonapi:"attr,ratio_y"`
+	Bitrate     int64 `jsonapi:"attr,bitrate" validate:"required_without=ResolutionX ResolutionY RatioX RatioY"`
+	ResolutionX int   `jsonapi:"attr,resolution_x" validate:"required_without=ResolutionX ResolutionY RatioX RatioY,required_with=ResolutionY"` //nolint:lll
+	ResolutionY int   `jsonapi:"attr,resolution_y" validate:"required_without=ResolutionX ResolutionY RatioX RatioY,required_with=ResolutionX"` //nolint:lll
+	RatioX      int   `jsonapi:"attr,ratio_x" validate:"required_without=ResolutionX ResolutionY RatioX RatioY,required_with=RatioY"`           //nolint:lll
+	RatioY      int   `jsonapi:"attr,ratio_y" validate:"required_without=ResolutionX ResolutionY RatioX RatioY,required_with=RatioX"`           //nolint:lll
 
 	OriginalVideo  *video.Resource `jsonapi:"relation,original_video,omitempty"`
 	ConvertedVideo *video.Resource `jsonapi:"relation,converted_video,omitempty"`
