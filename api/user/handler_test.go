@@ -150,7 +150,7 @@ func TestCreate(t *testing.T) {
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
-			expectedBody:   `{"data":{"type":"users","id":"1","attributes":{"email":"check@check.com"},"links":{"self":"/api/vi/auth/me"}}}` + "\n",
+			expectedBody:   `{"data":{"type":"users","id":"1","attributes":{"email":"check@check.com"},"links":{"self":"/api/v1/auth/me"}}}` + "\n",
 			expectedStatus: http.StatusCreated,
 		},
 		{

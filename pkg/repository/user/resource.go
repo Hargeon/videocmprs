@@ -26,6 +26,6 @@ type Resource struct {
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("%s/api/vi/auth/me", os.Getenv("BASE_URL")),
+		"self": fmt.Sprintf("%s/api/v1/auth/me", os.Getenv("BASE_URL")),
 	}
 }
