@@ -4,7 +4,6 @@ package video
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -24,19 +23,13 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 // Create video in db
-func (r *Repository) Create(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
-	video, ok := resource.(*Resource)
-	if !ok {
-		return nil, errors.New("invalid type assertion for *video.Resource in repository")
-	}
-
+func (r *Repository) Create(ctx context.Context, fields map[string]interface{}) (jsonapi.Linkable, error) {
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
 	var id int64
 	err := sq.Insert(TableName).
-		Columns("name", "size", "service_id").
-		Values(video.Name, video.Size, video.ServiceID).
+		SetMap(fields).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
@@ -95,7 +88,25 @@ func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, 
 	return video, err
 }
 
-// Update video TODO implement in future
+// Update video in db
 func (r *Repository) Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error) {
-	return nil, nil
+	c, cancel := context.WithTimeout(ctx, queryTimeOut)
+	defer cancel()
+
+	var reqID int64
+	err := sq.
+		Update(TableName).
+		SetMap(fields).
+		Where(sq.Eq{"id": id}).
+		Suffix("RETURNING id").
+		RunWith(r.db).
+		PlaceholderFormat(sq.Dollar).
+		QueryRowContext(c).
+		Scan(&reqID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Retrieve(ctx, reqID)
 }
