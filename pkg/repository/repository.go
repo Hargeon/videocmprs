@@ -39,7 +39,7 @@ type VideoRepository interface {
 	Retriever
 	Updater
 
-	Create(ctx context.Context, fields map[string]interface{})
+	Create(ctx context.Context, fields map[string]interface{}) (jsonapi.Linkable, error)
 }
 
 type RequestRepository interface {
