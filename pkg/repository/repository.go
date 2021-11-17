@@ -36,8 +36,10 @@ type CreatorRetriever interface {
 }
 
 type VideoRepository interface {
-	CreatorRetriever
+	Retriever
 	Updater
+
+	Create(ctx context.Context, fields map[string]interface{})
 }
 
 type RequestRepository interface {
