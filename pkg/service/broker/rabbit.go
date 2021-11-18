@@ -1,3 +1,4 @@
+// Package broker uses for implementation message broker
 package broker
 
 import (
@@ -77,6 +78,7 @@ func (r *Rabbit) Publish(body []byte) error {
 		})
 }
 
+// Consume return channel which read messages from rabbit
 func (r *Rabbit) Consume() (<-chan amqp.Delivery, error) {
 	msgs, err := r.ch.Consume(
 		r.q.Name,
