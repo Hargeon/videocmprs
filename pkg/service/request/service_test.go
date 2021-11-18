@@ -10,6 +10,7 @@ import (
 	"github.com/Hargeon/videocmprs/api/query"
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
+	"github.com/Hargeon/videocmprs/pkg/service"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/jsonapi"
@@ -33,6 +34,18 @@ func (c *cloudMock) Upload(ctx context.Context, header *multipart.FileHeader) (s
 	return "mock_service_id", nil
 }
 
+type rabbitSuccess struct{}
+
+type rabbitError struct{}
+
+func (r *rabbitSuccess) Publish(body []byte) error {
+	return nil
+}
+
+func (r *rabbitError) Publish(body []byte) error {
+	return errors.New("mock error")
+}
+
 func TestCreate(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -40,9 +53,10 @@ func TestCreate(t *testing.T) {
 	}
 
 	cases := []struct {
-		name     string
-		resource jsonapi.Linkable
-		mock     func()
+		name      string
+		resource  jsonapi.Linkable
+		publisher service.Publisher
+		mock      func()
 
 		expectedRequestId          int64
 		expectedRequestStatus      string
@@ -69,6 +83,7 @@ func TestCreate(t *testing.T) {
 		{
 			name:         "Invalid jsonapi.Linkable",
 			resource:     new(invalidLinkable),
+			publisher:    &rabbitSuccess{},
 			mock:         func() {},
 			errorPresent: true,
 		},
@@ -83,6 +98,7 @@ func TestCreate(t *testing.T) {
 				RatioY:      3,
 				VideoName:   "new_video",
 			},
+			publisher: &rabbitSuccess{},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
 					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
@@ -104,6 +120,7 @@ func TestCreate(t *testing.T) {
 					Filename: "failed",
 				},
 			},
+			publisher: &rabbitSuccess{},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
 					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
@@ -135,6 +152,7 @@ func TestCreate(t *testing.T) {
 					Filename: "failed",
 				},
 			},
+			publisher: &rabbitSuccess{},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
 					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
@@ -176,6 +194,7 @@ func TestCreate(t *testing.T) {
 					ServiceID: "mock_service_id",
 				},
 			},
+			publisher: &rabbitSuccess{},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
 					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
@@ -188,7 +207,7 @@ func TestCreate(t *testing.T) {
 						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs("my_name.mkv", 1258000, "mock_service_id").
+					WithArgs("my_name.mkv", "mock_service_id", 1258000).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
@@ -216,6 +235,7 @@ func TestCreate(t *testing.T) {
 					ServiceID: "mock_service_id",
 				},
 			},
+			publisher: &rabbitSuccess{},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
 					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
@@ -228,7 +248,7 @@ func TestCreate(t *testing.T) {
 						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs("my_name.mkv", 1258000, "mock_service_id").
+					WithArgs("my_name.mkv", "mock_service_id", 1258000).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
@@ -261,6 +281,7 @@ func TestCreate(t *testing.T) {
 					ServiceID: "mock_service_id",
 				},
 			},
+			publisher: &rabbitSuccess{},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
 					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
@@ -273,7 +294,7 @@ func TestCreate(t *testing.T) {
 						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs("my_name.mkv", 1258000, "mock_service_id").
+					WithArgs("my_name.mkv", "mock_service_id", 1258000).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
@@ -314,6 +335,89 @@ func TestCreate(t *testing.T) {
 
 			errorPresent: false,
 		},
+
+		{
+			name: "With invalid rabbit connection, should update request status",
+			resource: &request.Resource{
+				UserID:      1,
+				Bitrate:     64000,
+				ResolutionX: 800,
+				ResolutionY: 600,
+				RatioX:      4,
+				RatioY:      3,
+				VideoName:   "new_video",
+				VideoRequest: &multipart.FileHeader{
+					Filename: "good",
+				},
+				OriginalVideo: &video.Resource{
+					Name:      "my_name.mkv",
+					Size:      1258000,
+					ServiceID: "mock_service_id",
+				},
+			},
+			publisher: &rabbitError{},
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", request.TableName)).
+					WithArgs(64000, 800, 600, 4, 3, 1, "new_video").
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).
+						AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
+
+				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
+					WithArgs("my_name.mkv", "mock_service_id", 1258000).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).
+						AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
+						AddRow(1, "my_name.mkv", 1258000, 0, 0, 0, 0, 0, "mock_service_id"))
+
+				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "new_video"))
+
+				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
+					WithArgs("Failed connection to worker", "failed", 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", request.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
+						AddRow(1, "failed", "Failed connection to worker", 64000, 800, 600, 4, 3, "new_video"))
+			},
+
+			expectedRequestId:          1,
+			expectedRequestStatus:      "failed",
+			expectedRequestDetails:     "Failed connection to worker",
+			expectedRequestBitrate:     64000,
+			expectedRequestResolutionX: 800,
+			expectedRequestResolutionY: 600,
+			expectedRequestRatioX:      4,
+			expectedRequestRatioY:      3,
+			expectedRequestVideoName:   "new_video",
+
+			expectedOriginalVideoId:          1,
+			expectedOriginalVideoSize:        1258000,
+			expectedOriginalVideoName:        "my_name.mkv",
+			expectedOriginalVideoResolutionX: 0,
+			expectedOriginalVideoResolutionY: 0,
+			expectedOriginalVideoBitrate:     0,
+			expectedOriginalVideoRatioX:      0,
+			expectedOriginalVideoRatioY:      0,
+			expectedOriginalVideoServiceId:   "mock_service_id",
+
+			errorPresent: true,
+		},
 	}
 
 	for _, testCase := range cases {
@@ -322,7 +426,7 @@ func TestCreate(t *testing.T) {
 			rRepo := request.NewRepository(db)
 			vRepo := video.NewRepository(db)
 			cs := new(cloudMock)
-			srv := NewService(rRepo, vRepo, cs)
+			srv := NewService(rRepo, vRepo, cs, testCase.publisher)
 
 			linkable, err := srv.Create(context.Background(), testCase.resource)
 			if err != nil && !testCase.errorPresent {
@@ -512,7 +616,7 @@ func TestList(t *testing.T) {
 			rRepo := request.NewRepository(db)
 			vRepo := video.NewRepository(db)
 			cs := new(cloudMock)
-			srv := NewService(rRepo, vRepo, cs)
+			srv := NewService(rRepo, vRepo, cs, &rabbitSuccess{})
 			res, err := srv.List(context.Background(), testCase.params)
 			if err != nil && !testCase.errorPresent {
 				t.Errorf("Unexpected error: %s\n", err.Error())
