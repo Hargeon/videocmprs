@@ -35,3 +35,7 @@ type Request interface {
 	Creator
 	Paginator
 }
+
+type Publisher interface {
+	Publish(body []byte) error
+}
