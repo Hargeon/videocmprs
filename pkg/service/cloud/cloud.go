@@ -53,7 +53,7 @@ func (cloud *AWSS3) Upload(ctx context.Context, header *multipart.FileHeader) (s
 
 	uploader := s3manager.NewUploader(sess)
 
-	newFileName := fmt.Sprintf("original_%s_%s", uuid.New().String(), header.Filename)
+	newFileName := fmt.Sprintf("%s_%s", uuid.New().String(), header.Filename)
 	_, err = uploader.UploadWithContext(ctx, &s3manager.UploadInput{
 		Body:   file,
 		Bucket: aws.String(cloud.bucketName),
