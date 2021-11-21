@@ -5,24 +5,26 @@ import (
 	"database/sql"
 	"os"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
 	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
+	"github.com/Hargeon/videocmprs/pkg/service"
 	"github.com/Hargeon/videocmprs/pkg/service/cloud"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 type Handler struct {
-	db *sql.DB
+	db        *sql.DB
+	publisher service.Publisher
 }
 
 // NewHandler returns new Handler
-func NewHandler(db *sql.DB) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *sql.DB, pb service.Publisher) *Handler {
+	return &Handler{db: db, publisher: pb}
 }
 
 // InitRoutes initializes and returns *fiber.App
@@ -44,7 +46,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 		os.Getenv("AWS_ACCESS_KEY"),
 		os.Getenv("AWS_SECRET_KEY"))
 
-	v1.Mount("/requests", request.NewHandler(h.db, storage).InitRoutes())
+	v1.Mount("/requests", request.NewHandler(h.db, storage, h.publisher).InitRoutes())
 
 	return app
 }

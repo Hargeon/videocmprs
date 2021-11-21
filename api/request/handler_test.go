@@ -31,13 +31,19 @@ func (c *cloudMock) Upload(ctx context.Context, header *multipart.FileHeader) (s
 	return "mock_service_id", nil
 }
 
+type rabbitSuccess struct{}
+
+func (r *rabbitSuccess) Publish(body []byte) error {
+	return nil
+}
+
 func TestCreate(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db, new(cloudMock))
+	h := NewHandler(db, new(cloudMock), new(rabbitSuccess))
 
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
@@ -310,7 +316,7 @@ func TestCreate(t *testing.T) {
 						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "test_video.mkv"))
 
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs("test_video.mkv", 1441786, "mock_service_id").
+					WithArgs("test_video.mkv", "mock_service_id", 1441786).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
@@ -454,7 +460,7 @@ func TestList(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db, new(cloudMock))
+	h := NewHandler(db, new(cloudMock), new(rabbitSuccess))
 
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {

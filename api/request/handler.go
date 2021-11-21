@@ -23,10 +23,10 @@ type Handler struct {
 	srv service.Request
 }
 
-func NewHandler(db *sql.DB, cS service.CloudStorage) *Handler {
+func NewHandler(db *sql.DB, cS service.CloudStorage, pb service.Publisher) *Handler {
 	reqRepo := reqrepo.NewRepository(db)
 	vRepo := video.NewRepository(db)
-	srv := request.NewService(reqRepo, vRepo, cS)
+	srv := request.NewService(reqRepo, vRepo, cS, pb)
 
 	return &Handler{srv: srv}
 }
