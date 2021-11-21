@@ -2,6 +2,7 @@ package compress
 
 import "github.com/Hargeon/videocmprs/pkg/repository/video"
 
+// Response from compress worker
 type Response struct {
 	RequestID      int64           `json:"request_id"`
 	OriginalVideo  *video.Resource `json:"original_video,omitempty"`

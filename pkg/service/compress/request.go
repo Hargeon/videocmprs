@@ -1,3 +1,5 @@
+// Package compress uses for generation request to compress worker, updating
+// request and original video in db, creating converted video in db
 package compress
 
 import (
@@ -6,6 +8,7 @@ import (
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 )
 
+// Request for compress worker
 type Request struct {
 	RequestID      int64  `json:"request_id"`
 	Bitrate        int64  `json:"bitrate"`
