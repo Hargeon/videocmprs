@@ -66,33 +66,28 @@ func (repo *Repository) List(ctx context.Context, params *query.Params) ([]inter
 
 	for rows.Next() {
 		request := new(Resource)
-		origin := new(video.Resource)
-		converted := new(video.Resource)
+		origin := new(video.ResourceDTO)
+		converted := new(video.ResourceDTO)
 
 		err = rows.Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
 			&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY,
-			&request.VideoName, &origin.IDDB, &origin.NameDB, &origin.SizeDB, &origin.BitrateDB,
-			&origin.ResolutionXDB, &origin.ResolutionYDB, &origin.RatioXDB, &origin.RatioYDB,
-			&origin.ServiceIDDB, &converted.IDDB, &converted.NameDB, &converted.SizeDB,
-			&converted.BitrateDB, &converted.ResolutionXDB, &converted.ResolutionYDB,
-			&converted.RatioXDB, &converted.RatioYDB, &converted.ServiceIDDB)
+			&request.VideoName, &origin.ID, &origin.Name, &origin.Size, &origin.Bitrate,
+			&origin.ResolutionX, &origin.ResolutionY, &origin.RatioX, &origin.RatioY,
+			&origin.ServiceID, &converted.ID, &converted.Name, &converted.Size,
+			&converted.Bitrate, &converted.ResolutionX, &converted.ResolutionY,
+			&converted.RatioX, &converted.RatioY, &converted.ServiceID)
 
 		if err != nil {
 			return nil, err
 		}
 
-		// unmarshal origin video
-		repo.unmarshalDBVideo(origin)
-		// unmarshal converted video
-		repo.unmarshalDBVideo(converted)
-
 		// check if videos exists in db
-		if origin.ID > 0 {
-			request.OriginalVideo = origin
+		if origin.ID.Valid {
+			request.OriginalVideo = origin.BuildResource()
 		}
 
-		if converted.ID > 0 {
-			request.ConvertedVideo = converted
+		if converted.ID.Valid {
+			request.ConvertedVideo = converted.BuildResource()
 		}
 
 		requests = append(requests, request)
@@ -103,43 +98,4 @@ func (repo *Repository) List(ctx context.Context, params *query.Params) ([]inter
 	}
 
 	return requests, nil
-}
-
-// unmarshalDBVideo replace values from sql.Null fields with primitive types
-func (repo *Repository) unmarshalDBVideo(resource *video.Resource) {
-	if resource.IDDB.Valid {
-		resource.ID = resource.IDDB.Int64
-	}
-
-	if resource.NameDB.Valid {
-		resource.Name = resource.NameDB.String
-	}
-
-	if resource.SizeDB.Valid {
-		resource.Size = resource.SizeDB.Int64
-	}
-
-	if resource.BitrateDB.Valid {
-		resource.Bitrate = resource.BitrateDB.Int64
-	}
-
-	if resource.ResolutionXDB.Valid {
-		resource.ResolutionX = int(resource.ResolutionXDB.Int32)
-	}
-
-	if resource.ResolutionYDB.Valid {
-		resource.ResolutionY = int(resource.ResolutionYDB.Int32)
-	}
-
-	if resource.RatioXDB.Valid {
-		resource.RatioX = int(resource.RatioXDB.Int32)
-	}
-
-	if resource.RatioYDB.Valid {
-		resource.RatioY = int(resource.RatioYDB.Int32)
-	}
-
-	if resource.ServiceIDDB.Valid {
-		resource.ServiceID = resource.ServiceIDDB.String
-	}
 }

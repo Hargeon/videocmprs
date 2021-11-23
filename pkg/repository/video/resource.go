@@ -22,16 +22,60 @@ type Resource struct {
 	RatioX      int    `jsonapi:"attr,ratio_x,omitempty"`
 	RatioY      int    `jsonapi:"attr,ratio_y,omitempty"`
 	ServiceID   string
+}
 
-	IDDB          sql.NullInt64
-	NameDB        sql.NullString
-	SizeDB        sql.NullInt64
-	BitrateDB     sql.NullInt64
-	ResolutionXDB sql.NullInt32
-	ResolutionYDB sql.NullInt32
-	RatioXDB      sql.NullInt32
-	RatioYDB      sql.NullInt32
-	ServiceIDDB   sql.NullString
+type ResourceDTO struct {
+	ID          sql.NullInt64
+	Name        sql.NullString
+	Size        sql.NullInt64
+	Bitrate     sql.NullInt64
+	ResolutionX sql.NullInt32
+	ResolutionY sql.NullInt32
+	RatioX      sql.NullInt32
+	RatioY      sql.NullInt32
+	ServiceID   sql.NullString
+}
+
+func (r *ResourceDTO) BuildResource() *Resource {
+	res := new(Resource)
+
+	if r.ID.Valid {
+		res.ID = r.ID.Int64
+	}
+
+	if r.Name.Valid {
+		res.Name = r.Name.String
+	}
+
+	if r.Size.Valid {
+		res.Size = r.Size.Int64
+	}
+
+	if r.Bitrate.Valid {
+		res.Bitrate = r.Bitrate.Int64
+	}
+
+	if r.ResolutionX.Valid {
+		res.ResolutionX = int(r.ResolutionX.Int32)
+	}
+
+	if r.ResolutionY.Valid {
+		res.ResolutionY = int(r.ResolutionY.Int32)
+	}
+
+	if r.RatioX.Valid {
+		res.RatioX = int(r.RatioX.Int32)
+	}
+
+	if r.RatioY.Valid {
+		res.RatioY = int(r.RatioY.Int32)
+	}
+
+	if r.ServiceID.Valid {
+		res.ServiceID = r.ServiceID.String
+	}
+
+	return res
 }
 
 // JSONAPILinks ...
