@@ -1,5 +1,4 @@
 -- +goose Up
--- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS requests (
     id BIGSERIAL NOT NULL UNIQUE PRIMARY KEY,
     user_id BIGINT REFERENCES users,
@@ -17,9 +16,6 @@ CREATE TABLE IF NOT EXISTS requests (
     converted_file_id BIGINT,
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
--- +goose StatementEnd
 
 -- +goose Down
--- +goose StatementBegin
 DROP TABLE IF EXISTS requests;
--- +goose StatementEnd
