@@ -1,0 +1,9 @@
+name: pipeline
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Unit Tests
+        run: go test -v ./...
