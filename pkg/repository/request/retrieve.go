@@ -22,12 +22,14 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 		PlaceholderFormat(sq.Dollar).
 		RunWith(repo.db).
 		QueryRowContext(c).
-		Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
+		Scan(&request.ID, &request.Status, &request.DetailsDB, &request.Bitrate,
 			&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY,
 			&request.VideoName)
 	if err != nil {
 		return nil, err
 	}
+
+	request.Details = request.DetailsDB.String
 
 	return request, err
 }

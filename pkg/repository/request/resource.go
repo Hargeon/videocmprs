@@ -1,6 +1,7 @@
 package request
 
 import (
+	"database/sql"
 	"mime/multipart"
 
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
@@ -20,6 +21,7 @@ type Resource struct {
 	VideoName string `jsonapi:"attr,video_name"`
 	Status    string `jsonapi:"attr,status,omitempty"`
 	Details   string `jsonapi:"attr,details,omitempty"`
+	DetailsDB sql.NullString
 
 	Bitrate     int64 `jsonapi:"attr,bitrate" validate:"required_if=ResolutionX 0 ResolutionY 0 RatioX 0 RatioY 0"`
 	ResolutionX int   `jsonapi:"attr,resolution_x" validate:"required_if=Bitrate 0 RatioX 0 RatioY 0,required_with=ResolutionY"` //nolint:lll

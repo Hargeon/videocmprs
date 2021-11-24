@@ -69,7 +69,7 @@ func (repo *Repository) List(ctx context.Context, params *query.Params) ([]inter
 		origin := new(video.DTO)
 		converted := new(video.DTO)
 
-		err = rows.Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
+		err = rows.Scan(&request.ID, &request.Status, &request.DetailsDB, &request.Bitrate,
 			&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY,
 			&request.VideoName, &origin.ID, &origin.Name, &origin.Size, &origin.Bitrate,
 			&origin.ResolutionX, &origin.ResolutionY, &origin.RatioX, &origin.RatioY,
@@ -81,6 +81,7 @@ func (repo *Repository) List(ctx context.Context, params *query.Params) ([]inter
 			return nil, err
 		}
 
+		request.Details = request.DetailsDB.String
 		// check if videos exists in db
 		if origin.ID.Valid {
 			request.OriginalVideo = origin.BuildResource()
