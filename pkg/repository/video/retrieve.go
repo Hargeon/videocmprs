@@ -12,7 +12,7 @@ func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, 
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	video := new(ResourceDTO)
+	video := new(DTO)
 
 	err := sq.
 		Select("id", "name", "size", "bitrate", "resolution_x",

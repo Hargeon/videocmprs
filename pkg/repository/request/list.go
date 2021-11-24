@@ -66,8 +66,8 @@ func (repo *Repository) List(ctx context.Context, params *query.Params) ([]inter
 
 	for rows.Next() {
 		request := new(Resource)
-		origin := new(video.ResourceDTO)
-		converted := new(video.ResourceDTO)
+		origin := new(video.DTO)
+		converted := new(video.DTO)
 
 		err = rows.Scan(&request.ID, &request.Status, &request.Details, &request.Bitrate,
 			&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY,

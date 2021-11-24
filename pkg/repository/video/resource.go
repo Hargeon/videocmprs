@@ -24,7 +24,7 @@ type Resource struct {
 	ServiceID   string
 }
 
-type ResourceDTO struct {
+type DTO struct {
 	ID          sql.NullInt64
 	Name        sql.NullString
 	Size        sql.NullInt64
@@ -36,46 +36,18 @@ type ResourceDTO struct {
 	ServiceID   sql.NullString
 }
 
-func (r *ResourceDTO) BuildResource() *Resource {
-	res := new(Resource)
-
-	if r.ID.Valid {
-		res.ID = r.ID.Int64
+func (dto *DTO) BuildResource() *Resource {
+	return &Resource{
+		ID:          dto.ID.Int64,
+		Name:        dto.Name.String,
+		Size:        dto.Size.Int64,
+		Bitrate:     dto.Bitrate.Int64,
+		ResolutionX: int(dto.ResolutionX.Int32),
+		ResolutionY: int(dto.ResolutionY.Int32),
+		RatioX:      int(dto.RatioX.Int32),
+		RatioY:      int(dto.RatioY.Int32),
+		ServiceID:   dto.ServiceID.String,
 	}
-
-	if r.Name.Valid {
-		res.Name = r.Name.String
-	}
-
-	if r.Size.Valid {
-		res.Size = r.Size.Int64
-	}
-
-	if r.Bitrate.Valid {
-		res.Bitrate = r.Bitrate.Int64
-	}
-
-	if r.ResolutionX.Valid {
-		res.ResolutionX = int(r.ResolutionX.Int32)
-	}
-
-	if r.ResolutionY.Valid {
-		res.ResolutionY = int(r.ResolutionY.Int32)
-	}
-
-	if r.RatioX.Valid {
-		res.RatioX = int(r.RatioX.Int32)
-	}
-
-	if r.RatioY.Valid {
-		res.RatioY = int(r.RatioY.Int32)
-	}
-
-	if r.ServiceID.Valid {
-		res.ServiceID = r.ServiceID.String
-	}
-
-	return res
 }
 
 // JSONAPILinks ...
