@@ -17,8 +17,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const port = ":3001"
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -85,7 +83,7 @@ func main() {
 		}
 	}()
 
-	if err := app.Listen(port); err != nil {
+	if err := app.Listen(os.Getenv("PORT")); err != nil {
 		log.Fatalln(err)
 	}
 }
