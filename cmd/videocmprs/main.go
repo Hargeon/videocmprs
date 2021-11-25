@@ -15,7 +15,33 @@ import (
 
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/pressly/goose"
 )
+
+const migrationsPath = "db/migrations/common"
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	dsn := fmt.Sprintf("user=%s dbname=%s sslmode=%s host=%s port=%s password=%s",
+		os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_SSLMODE"),
+		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_PASS"))
+
+	db, err := sql.Open("pgx", dsn)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer db.Close()
+
+	if err := goose.Run("up", db, migrationsPath); err != nil {
+		log.Fatalf("goose %v: %v", "up", err)
+	}
+}
 
 func main() {
 	err := godotenv.Load()
@@ -31,6 +57,8 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	defer db.Close()
 
 	if err = db.Ping(); err != nil {
 		log.Fatalln(err)
