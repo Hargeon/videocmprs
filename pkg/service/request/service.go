@@ -107,8 +107,6 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion")
 	}
 
-	req.OriginalVideo = updatedVideo
-
 	// send requests to rabbit
 	err = srv.rabbitPublish(req)
 	if err != nil {
@@ -135,6 +133,10 @@ func (srv *Service) List(ctx context.Context, params *query.Params) ([]interface
 	}
 
 	return requests, nil
+}
+
+func (srv *Service) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
+	return srv.requestRepo.Retrieve(ctx, id)
 }
 
 func (srv *Service) rabbitPublish(res *request.Resource) error {

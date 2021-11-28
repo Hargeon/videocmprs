@@ -2,7 +2,9 @@ package request
 
 import (
 	"database/sql"
+	"fmt"
 	"mime/multipart"
+	"os"
 
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 
@@ -38,6 +40,6 @@ type Resource struct {
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": "need add", // TODO need add link
+		"self": fmt.Sprintf("%s/api/v1/requests/%d", os.Getenv("BASE_URL"), r.ID),
 	}
 }

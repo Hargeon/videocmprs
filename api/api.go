@@ -3,7 +3,6 @@ package api
 
 import (
 	"database/sql"
-	"os"
 
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
@@ -11,7 +10,6 @@ import (
 	"github.com/Hargeon/videocmprs/api/user"
 	"github.com/Hargeon/videocmprs/api/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
-	"github.com/Hargeon/videocmprs/pkg/service/cloud"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -21,11 +19,12 @@ import (
 type Handler struct {
 	db        *sql.DB
 	publisher service.Publisher
+	cs        service.CloudStorage
 }
 
 // NewHandler returns new Handler
-func NewHandler(db *sql.DB, pb service.Publisher) *Handler {
-	return &Handler{db: db, publisher: pb}
+func NewHandler(db *sql.DB, pb service.Publisher, cs service.CloudStorage) *Handler {
+	return &Handler{db: db, publisher: pb, cs: cs}
 }
 
 // InitRoutes initializes and returns *fiber.App
@@ -41,13 +40,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 	v1.Mount("/auth", auth.NewHandler(h.db).InitRoutes())
 	v1.Use(middleware.UserIdentify)
 
-	storage := cloud.NewS3Storage(
-		os.Getenv("AWS_BUCKET_NAME"),
-		os.Getenv("AWS_REGION"),
-		os.Getenv("AWS_ACCESS_KEY"),
-		os.Getenv("AWS_SECRET_KEY"))
-
-	v1.Mount("/requests", request.NewHandler(h.db, storage, h.publisher).InitRoutes())
+	v1.Mount("/requests", request.NewHandler(h.db, h.cs, h.publisher).InitRoutes())
 	v1.Mount("/videos", video.NewHandler(h.db).InitRoutes())
 
 	return app

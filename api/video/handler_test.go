@@ -100,6 +100,10 @@ func TestRetrieve(t *testing.T) {
 				t.Errorf("Invalid body\nexpected: %v\ngot: %v\n",
 					testCase.expectedBody, string(body))
 			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s\n", err)
+			}
 		})
 	}
 }

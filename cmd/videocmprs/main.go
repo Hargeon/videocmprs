@@ -11,6 +11,7 @@ import (
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/Hargeon/videocmprs/pkg/service/broker"
+	"github.com/Hargeon/videocmprs/pkg/service/cloud"
 	"github.com/Hargeon/videocmprs/pkg/service/compress"
 
 	_ "github.com/jackc/pgx/stdlib"
@@ -86,9 +87,6 @@ func main() {
 	}
 	defer consumerConn.Close()
 
-	h := api.NewHandler(db, publisher)
-	app := h.InitRoutes()
-
 	msgs, err := consumer.Consume()
 	if err != nil {
 		log.Fatalln(err)
@@ -110,6 +108,15 @@ func main() {
 			}
 		}
 	}()
+
+	storage := cloud.NewS3Storage(
+		os.Getenv("AWS_BUCKET_NAME"),
+		os.Getenv("AWS_REGION"),
+		os.Getenv("AWS_ACCESS_KEY"),
+		os.Getenv("AWS_SECRET_KEY"))
+
+	h := api.NewHandler(db, publisher, storage)
+	app := h.InitRoutes()
 
 	if err := app.Listen(os.Getenv("PORT")); err != nil {
 		log.Fatalln(err)

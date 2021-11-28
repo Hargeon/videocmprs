@@ -19,6 +19,11 @@ import (
 	"github.com/google/jsonapi"
 )
 
+const (
+	IDBase    = 10
+	IDBitSize = 64
+)
+
 type Handler struct {
 	srv service.Request
 }
@@ -35,6 +40,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 	router := fiber.New()
 	router.Post("/", h.create)
 	router.Get("/", h.list)
+	router.Get("/:id", h.retrieve)
 
 	return router
 }
@@ -171,4 +177,33 @@ func (h *Handler) isFile(types []string) bool {
 	}
 
 	return present
+}
+
+func (h *Handler) retrieve(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := strconv.ParseInt(idStr, IDBase, IDBitSize)
+
+	if err != nil || id <= 0 {
+		errors := []string{"Invalid ID"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
+	res, err := h.srv.Retrieve(c.Context(), id)
+
+	if err != nil {
+		errors := []string{"Can not fetch video"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
+	}
+
+	err = jsonapi.MarshalPayload(c.Status(http.StatusOK), res)
+
+	if err != nil {
+		errors := []string{err.Error()}
+
+		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
+	}
+
+	return nil
 }

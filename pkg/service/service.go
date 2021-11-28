@@ -33,6 +33,7 @@ type CloudStorage interface {
 
 type Request interface {
 	Creator
+	Retriever
 	Paginator
 }
 
