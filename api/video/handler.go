@@ -57,7 +57,7 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
 
-	err = jsonapi.MarshalPayload(c.Status(http.StatusCreated), res)
+	err = jsonapi.MarshalPayload(c.Status(http.StatusOK), res)
 
 	if err != nil {
 		errors := []string{err.Error()}

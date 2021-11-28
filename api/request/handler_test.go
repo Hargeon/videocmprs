@@ -334,7 +334,7 @@ func TestCreate(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
 						AddRow(1, "original_in_review", "", 64000, 800, 600, 4, 3, "test_video.mkv"))
 			},
-			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review","video_name":"test_video.mkv"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}},"included":[{"type":"videos","id":"1","attributes":{"name":"my_name.mkv","size":1441786},"links":{"self":"need add"}}]}` + "\n",
+			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review","video_name":"test_video.mkv"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}},"included":[{"type":"videos","id":"1","attributes":{"name":"my_name.mkv","size":1441786},"links":{"self":"/api/v1/videos/1"}}]}` + "\n",
 			expectedStatus: http.StatusCreated,
 		},
 		{
@@ -413,7 +413,7 @@ func TestCreate(t *testing.T) {
 
 			strBody := string(resBody)
 			if strBody != testCase.expectedBody {
-				t.Errorf("Invalid body, expected: %#v, got: %#v\n",
+				t.Errorf("Invalid body\nexpected: %#v\ngot: %#v\n",
 					testCase.expectedBody, strBody)
 			}
 
@@ -576,7 +576,7 @@ func TestList(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"need add"}}]}` + "\n",
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"/api/v1/videos/1"}}]}` + "\n",
 			expectedStatus: http.StatusOK,
 		},
 
@@ -604,7 +604,7 @@ func TestList(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"need add"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"self":"need add"}}]}` + "\n",
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"need add"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"/api/v1/videos/1"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"self":"/api/v1/videos/2"}}]}` + "\n",
 			expectedStatus: http.StatusOK,
 		},
 	}

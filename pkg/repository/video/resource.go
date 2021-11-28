@@ -2,6 +2,8 @@ package video
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 
 	"github.com/google/jsonapi"
 )
@@ -92,6 +94,6 @@ func (r *Resource) BuildFields() map[string]interface{} {
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": "need add", // TODO need add link
+		"self": fmt.Sprintf("%s/api/v1/videos/%d", os.Getenv("BASE_URL"), r.ID),
 	}
 }
