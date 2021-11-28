@@ -22,16 +22,32 @@ type Resource struct {
 	RatioX      int    `jsonapi:"attr,ratio_x,omitempty" json:"ratio_x"`
 	RatioY      int    `jsonapi:"attr,ratio_y,omitempty" json:"ratio_y"`
 	ServiceID   string `json:"service_id,omitempty"`
+}
 
-	IDDB          sql.NullInt64
-	NameDB        sql.NullString
-	SizeDB        sql.NullInt64
-	BitrateDB     sql.NullInt64
-	ResolutionXDB sql.NullInt32
-	ResolutionYDB sql.NullInt32
-	RatioXDB      sql.NullInt32
-	RatioYDB      sql.NullInt32
-	ServiceIDDB   sql.NullString
+type DTO struct {
+	ID          sql.NullInt64
+	Name        sql.NullString
+	Size        sql.NullInt64
+	Bitrate     sql.NullInt64
+	ResolutionX sql.NullInt32
+	ResolutionY sql.NullInt32
+	RatioX      sql.NullInt32
+	RatioY      sql.NullInt32
+	ServiceID   sql.NullString
+}
+
+func (dto *DTO) BuildResource() *Resource {
+	return &Resource{
+		ID:          dto.ID.Int64,
+		Name:        dto.Name.String,
+		Size:        dto.Size.Int64,
+		Bitrate:     dto.Bitrate.Int64,
+		ResolutionX: int(dto.ResolutionX.Int32),
+		ResolutionY: int(dto.ResolutionY.Int32),
+		RatioX:      int(dto.RatioX.Int32),
+		RatioY:      int(dto.RatioY.Int32),
+		ServiceID:   dto.ServiceID.String,
+	}
 }
 
 // BuildFields function create map with fields and values for INSERT DB query

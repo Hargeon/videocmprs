@@ -2,12 +2,8 @@
 package video
 
 import (
-	"context"
 	"database/sql"
 	"time"
-
-	sq "github.com/Masterminds/squirrel"
-	"github.com/google/jsonapi"
 )
 
 const queryTimeOut = 5 * time.Second
@@ -20,93 +16,4 @@ type Repository struct {
 // NewRepository initialize repository
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
-}
-
-// Create video in db
-func (r *Repository) Create(ctx context.Context, fields map[string]interface{}) (jsonapi.Linkable, error) {
-	c, cancel := context.WithTimeout(ctx, queryTimeOut)
-	defer cancel()
-
-	var id int64
-	err := sq.Insert(TableName).
-		SetMap(fields).
-		Suffix("RETURNING id").
-		PlaceholderFormat(sq.Dollar).
-		RunWith(r.db).
-		QueryRowContext(c).
-		Scan(&id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Retrieve(ctx, id)
-}
-
-// Retrieve video from db
-func (r *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
-	c, cancel := context.WithTimeout(ctx, queryTimeOut)
-	defer cancel()
-
-	video := new(Resource)
-
-	err := sq.
-		Select("id", "name", "size", "bitrate", "resolution_x",
-			"resolution_y", "ratio_x", "ratio_y", "service_id").
-		From(TableName).
-		Where(sq.Eq{"id": id}).
-		PlaceholderFormat(sq.Dollar).
-		RunWith(r.db).
-		QueryRowContext(c).
-		Scan(&video.ID, &video.Name, &video.Size, &video.BitrateDB, &video.ResolutionXDB,
-			&video.ResolutionYDB, &video.RatioXDB, &video.RatioYDB, &video.ServiceID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if video.BitrateDB.Valid {
-		video.Bitrate = video.BitrateDB.Int64
-	}
-
-	if video.ResolutionXDB.Valid {
-		video.ResolutionX = int(video.ResolutionXDB.Int32)
-	}
-
-	if video.ResolutionYDB.Valid {
-		video.ResolutionY = int(video.ResolutionYDB.Int32)
-	}
-
-	if video.RatioXDB.Valid {
-		video.RatioX = int(video.RatioXDB.Int32)
-	}
-
-	if video.RatioYDB.Valid {
-		video.RatioY = int(video.RatioYDB.Int32)
-	}
-
-	return video, err
-}
-
-// Update video in db
-func (r *Repository) Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error) {
-	c, cancel := context.WithTimeout(ctx, queryTimeOut)
-	defer cancel()
-
-	var reqID int64
-	err := sq.
-		Update(TableName).
-		SetMap(fields).
-		Where(sq.Eq{"id": id}).
-		Suffix("RETURNING id").
-		RunWith(r.db).
-		PlaceholderFormat(sq.Dollar).
-		QueryRowContext(c).
-		Scan(&reqID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Retrieve(ctx, reqID)
 }
