@@ -1,11 +1,9 @@
-package auth
+package user
 
 import (
 	"context"
 	"fmt"
 	"testing"
-
-	"github.com/Hargeon/videocmprs/pkg/repository/user"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -21,7 +19,7 @@ func TestExists(t *testing.T) {
 		email        string
 		password     string
 		mock         func()
-		expectedID   int64
+		expectedId   int64
 		errorPresent bool
 	}{
 		{
@@ -29,11 +27,11 @@ func TestExists(t *testing.T) {
 			email:    "check@check.com",
 			password: "qweqweqweqwe",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 			},
-			expectedID:   1,
+			expectedId:   1,
 			errorPresent: false,
 		},
 		{
@@ -41,11 +39,11 @@ func TestExists(t *testing.T) {
 			email:    "check@check.com",
 			password: "qweqweqweqwe",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", TableName)).
 					WithArgs("check@check.com", "qweqweqweqwe").
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			expectedID:   0,
+			expectedId:   0,
 			errorPresent: true,
 		},
 	}
@@ -63,8 +61,8 @@ func TestExists(t *testing.T) {
 				t.Errorf("Should be error\n")
 			}
 
-			if id != testCase.expectedID {
-				t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedID, id)
+			if id != testCase.expectedId {
+				t.Errorf("Invalid id, expected: %d, got: %d\n", testCase.expectedId, id)
 			}
 		})
 	}

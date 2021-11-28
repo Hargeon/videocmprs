@@ -1,6 +1,8 @@
 package user
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/jsonapi"
@@ -8,6 +10,8 @@ import (
 
 // TableName is name of users table in db
 const TableName = "users"
+
+var _ jsonapi.Linkable = (*Resource)(nil)
 
 // Resource represent users table in db
 type Resource struct {
@@ -22,6 +26,6 @@ type Resource struct {
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": "need add", // TODO need add link
+		"self": fmt.Sprintf("%s/api/v1/auth/me", os.Getenv("BASE_URL")),
 	}
 }

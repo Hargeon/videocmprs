@@ -17,7 +17,7 @@ import (
 )
 
 type Handler struct {
-	srv service.UserService
+	srv service.Creator
 }
 
 // NewHandler initialize Handler

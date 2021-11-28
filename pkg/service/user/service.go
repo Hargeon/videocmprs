@@ -34,8 +34,3 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 
 	return srv.repo.Create(ctx, usr)
 }
-
-// Retrieve user
-func (srv *Service) Retrieve(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
-	return nil, nil
-}

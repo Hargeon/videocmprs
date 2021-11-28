@@ -13,8 +13,8 @@ func TestEncryption(t *testing.T) {
 	hash := sha1.New()
 	hash.Write(text)
 	expectedText := hash.Sum([]byte(secret))
-	gotText := GenerateHash(text)
-	if string(expectedText) != string(gotText) {
+
+	if gotText := GenerateHash(text); string(expectedText) != string(gotText) {
 		t.Errorf("Invalid encryption, expected: %s, got: %s\n", expectedText, gotText)
 	}
 }

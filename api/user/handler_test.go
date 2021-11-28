@@ -150,7 +150,7 @@ func TestCreate(t *testing.T) {
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
 			},
-			expectedBody:   `{"data":{"type":"users","id":"1","attributes":{"email":"check@check.com"},"links":{"self":"need add"}}}` + "\n",
+			expectedBody:   `{"data":{"type":"users","id":"1","attributes":{"email":"check@check.com"},"links":{"self":"/api/v1/auth/me"}}}` + "\n",
 			expectedStatus: http.StatusCreated,
 		},
 		{
@@ -167,6 +167,7 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
 				}
+
 				return reqBuf.Bytes()
 			},
 			mock: func() {

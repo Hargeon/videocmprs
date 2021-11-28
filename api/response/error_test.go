@@ -2,11 +2,12 @@ package response
 
 import (
 	"encoding/json"
-	"github.com/gofiber/fiber/v2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type ErrorObject struct {

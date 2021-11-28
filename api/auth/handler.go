@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/Hargeon/videocmprs/api/middleware"
 	"github.com/Hargeon/videocmprs/api/response"
-	"github.com/Hargeon/videocmprs/pkg/repository/auth"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
 	"github.com/Hargeon/videocmprs/pkg/service"
-	authsrv "github.com/Hargeon/videocmprs/pkg/service/auth"
+	"github.com/Hargeon/videocmprs/pkg/service/auth"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -21,8 +21,8 @@ type Handler struct {
 }
 
 func NewHandler(db *sql.DB) *Handler {
-	repo := auth.NewRepository(db)
-	srv := authsrv.NewService(repo)
+	repo := user.NewRepository(db)
+	srv := auth.NewService(repo)
 
 	return &Handler{srv: srv}
 }
@@ -30,6 +30,8 @@ func NewHandler(db *sql.DB) *Handler {
 func (h *Handler) InitRoutes() *fiber.App {
 	router := fiber.New()
 	router.Post("/sign-in", h.signIn)
+	router.Use(middleware.UserIdentify)
+	router.Get("/me", h.retrieve)
 
 	return router
 }
@@ -66,4 +68,24 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 	}
 
 	return nil
+}
+
+// retrieve return user params
+func (h *Handler) retrieve(c *fiber.Ctx) error {
+	id, ok := c.Locals("user_id").(int64)
+	if !ok {
+		errors := []string{"Invalid type assertion for token user_id"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
+	res, err := h.srv.Retrieve(c.Context(), id)
+
+	if err != nil {
+		errors := []string{err.Error()}
+
+		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
+	}
+
+	return jsonapi.MarshalPayload(c.Status(http.StatusOK), res)
 }

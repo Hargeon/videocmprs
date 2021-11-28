@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func TestAcceptHeader(t *testing.T) {

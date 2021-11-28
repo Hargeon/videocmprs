@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -20,14 +21,14 @@ import (
 func TestSignIn(t *testing.T) {
 	db, mock, err := sqlmock.New()
 
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
+	}
+
 	handler := NewHandler(db)
 	app := fiber.New()
 
 	app.Post("/", handler.signIn)
-
-	if err != nil {
-		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
-	}
 
 	cases := []struct {
 		name           string
@@ -179,6 +180,90 @@ func TestSignIn(t *testing.T) {
 					t.Errorf("Invalid response body,\nexpected: %#v,\ngot: %#v\n", testCase.expectedBody,
 						string(respBody))
 				}
+			}
+		})
+	}
+}
+
+func TestRetrieve(t *testing.T) {
+	db, mock, err := sqlmock.New()
+
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
+	}
+
+	handler := NewHandler(db)
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user_id", int64(1))
+
+		return c.Next()
+	})
+	app.Get("/", handler.retrieve)
+
+	cases := []struct {
+		name           string
+		mock           func()
+		requestMock    func() *http.Request
+		expectedBody   string
+		expectedStatus int
+	}{
+		{
+			name: "Should find user",
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}).AddRow("1", "check@check.com"))
+			},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+				return req
+			},
+			expectedBody:   `{"data":{"type":"users","id":"1","attributes":{"email":"check@check.com"},"links":{"self":"/api/v1/auth/me"}}}` + "\n",
+			expectedStatus: http.StatusOK,
+		},
+
+		{
+			name: "Should not find user",
+			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id, email FROM %s", user.TableName)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "email"}))
+			},
+			requestMock: func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+				return req
+			},
+			expectedBody:   `{"errors":[{"title":"sql: no rows in result set"}]}` + "\n",
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+			req := testCase.requestMock()
+
+			res, err := app.Test(req)
+			if err != nil {
+				t.Fatalf("Unexpected error when creating a stub request, error: %s\n", err.Error())
+			}
+
+			if res.StatusCode != testCase.expectedStatus {
+				t.Errorf("Invaid status code, expected: %d, got: %d\n",
+					testCase.expectedStatus, res.StatusCode)
+			}
+
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatalf("Unexpected error when reading a response body, error: %s\n", err.Error())
+			}
+
+			if string(body) != testCase.expectedBody {
+				t.Errorf("Invalid body,\nexpected: %#v\ngot: %#v\n",
+					testCase.expectedBody, string(body))
 			}
 		})
 	}

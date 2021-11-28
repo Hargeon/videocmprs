@@ -1,12 +1,14 @@
 package middleware
 
 import (
-	"github.com/Hargeon/videocmprs/pkg/service/jwt"
-	"github.com/gofiber/fiber/v2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Hargeon/videocmprs/pkg/service/jwt"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func TestUserIdentify(t *testing.T) {
