@@ -15,7 +15,7 @@ type Creator interface {
 }
 
 type Retriever interface {
-	Retrieve(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
+	Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error)
 }
 
 type Paginator interface {
@@ -24,7 +24,7 @@ type Paginator interface {
 
 type Tokenable interface {
 	GenerateToken(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error)
-	Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error)
+	Retriever
 }
 
 type CloudStorage interface {

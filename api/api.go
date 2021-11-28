@@ -9,6 +9,7 @@ import (
 	"github.com/Hargeon/videocmprs/api/middleware"
 	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
+	"github.com/Hargeon/videocmprs/api/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
 	"github.com/Hargeon/videocmprs/pkg/service/cloud"
 
@@ -47,6 +48,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 		os.Getenv("AWS_SECRET_KEY"))
 
 	v1.Mount("/requests", request.NewHandler(h.db, storage, h.publisher).InitRoutes())
+	v1.Mount("/videos", video.NewHandler(h.db).InitRoutes())
 
 	return app
 }
