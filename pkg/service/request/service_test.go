@@ -42,7 +42,15 @@ func (r *rabbitSuccess) Publish(body []byte) error {
 	return nil
 }
 
+func (r *rabbitSuccess) Ping() error {
+	return nil
+}
+
 func (r *rabbitError) Publish(body []byte) error {
+	return errors.New("mock error")
+}
+
+func (r *rabbitError) Ping() error {
 	return errors.New("mock error")
 }
 

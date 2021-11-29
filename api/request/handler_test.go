@@ -37,6 +37,10 @@ func (r *rabbitSuccess) Publish(body []byte) error {
 	return nil
 }
 
+func (r *rabbitSuccess) Ping() error {
+	return nil
+}
+
 func TestCreate(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

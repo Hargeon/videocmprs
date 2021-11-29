@@ -39,4 +39,5 @@ type Request interface {
 
 type Publisher interface {
 	Publish(body []byte) error
+	Ping() error
 }

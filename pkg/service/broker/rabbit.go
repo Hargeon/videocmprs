@@ -91,3 +91,17 @@ func (r *Rabbit) Consume() (<-chan amqp.Delivery, error) {
 
 	return msgs, err
 }
+
+func (r *Rabbit) Ping() error {
+	rabbitDsn := fmt.Sprintf("amqp://%s:%s@%s:%s/",
+		r.user, r.password, r.host, r.port)
+	conn, err := amqp.Dial(rabbitDsn)
+
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+
+	return nil
+}
