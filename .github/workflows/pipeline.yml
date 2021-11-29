@@ -46,4 +46,4 @@ jobs:
           context: ./
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/videocmprs:${{env.VERSION_TAG}}
+          tags: hargeon/videocmprs:${{ steps.meta.outputs.tags }}
