@@ -63,6 +63,10 @@ func TestRelationExists(t *testing.T) {
 				t.Errorf("Invalid ID, expected: %d, got: %d\n",
 					testCase.expectedID, id)
 			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
 		})
 	}
 }

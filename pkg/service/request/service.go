@@ -135,7 +135,16 @@ func (srv *Service) List(ctx context.Context, params *query.Params) ([]interface
 	return requests, nil
 }
 
-func (srv *Service) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
+func (srv *Service) Retrieve(ctx context.Context, userID, relationID int64) (jsonapi.Linkable, error) {
+	id, err := srv.requestRepo.RelationExists(ctx, userID, relationID)
+	if err != nil {
+		return nil, err
+	}
+
+	if id == 0 {
+		return nil, errors.New("request does not exists")
+	}
+
 	return srv.requestRepo.Retrieve(ctx, id)
 }
 
@@ -144,7 +153,7 @@ func (srv *Service) rabbitPublish(res *request.Resource) error {
 	body, err := json.Marshal(req)
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return srv.publisher.Publish(body)

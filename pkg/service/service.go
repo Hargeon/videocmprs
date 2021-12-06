@@ -18,6 +18,10 @@ type Retriever interface {
 	Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error)
 }
 
+type RetrieveRelation interface {
+	Retrieve(ctx context.Context, userID, relationID int64) (jsonapi.Linkable, error)
+}
+
 type Paginator interface {
 	List(ctx context.Context, params *query.Params) ([]interface{}, error)
 }
@@ -33,7 +37,7 @@ type CloudStorage interface {
 
 type Request interface {
 	Creator
-	Retriever
+	RetrieveRelation
 	Paginator
 }
 
