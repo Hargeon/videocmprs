@@ -16,6 +16,7 @@ var _ jsonapi.Linkable = (*Resource)(nil)
 // Resource represent video in db
 type Resource struct {
 	ID          int64  `jsonapi:"primary,videos" json:"id,omitempty"`
+	UserID      int64  `json:"user_id"`
 	Name        string `jsonapi:"attr,name" json:"name"`
 	Size        int64  `jsonapi:"attr,size" json:"size"`
 	Bitrate     int64  `jsonapi:"attr,bitrate,omitempty" json:"bitrate"`
@@ -28,6 +29,7 @@ type Resource struct {
 
 type DTO struct {
 	ID          sql.NullInt64
+	UserID      sql.NullInt64
 	Name        sql.NullString
 	Size        sql.NullInt64
 	Bitrate     sql.NullInt64
@@ -42,6 +44,7 @@ func (dto *DTO) BuildResource() *Resource {
 	return &Resource{
 		ID:          dto.ID.Int64,
 		Name:        dto.Name.String,
+		UserID:      dto.UserID.Int64,
 		Size:        dto.Size.Int64,
 		Bitrate:     dto.Bitrate.Int64,
 		ResolutionX: int(dto.ResolutionX.Int32),
@@ -55,6 +58,10 @@ func (dto *DTO) BuildResource() *Resource {
 // BuildFields function create map with fields and values for INSERT DB query
 func (r *Resource) BuildFields() map[string]interface{} {
 	fields := make(map[string]interface{})
+
+	if r.UserID != 0 {
+		fields["user_id"] = r.UserID
+	}
 
 	if r.Name != "" {
 		fields["name"] = r.Name

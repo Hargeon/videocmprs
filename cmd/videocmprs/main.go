@@ -80,7 +80,7 @@ func main() {
 
 	go func() {
 		for d := range msgs {
-			log.Printf("Received %s", string(d.Body))
+			logger.Info("Received from rabbit", zap.String("Body", string(d.Body)))
 
 			err := srv.UpdateRequest(context.Background(), d.Body)
 			if err != nil {

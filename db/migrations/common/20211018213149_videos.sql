@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS videos (
     id BIGSERIAL NOT NULL UNIQUE PRIMARY KEY,
+    user_id BIGINT REFERENCES users,
     name VARCHAR(255) NOT NULL,
     size BIGINT NOT NULL,
 

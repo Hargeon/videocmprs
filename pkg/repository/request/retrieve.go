@@ -22,6 +22,7 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 
 	err := sq.
 		Select(fmt.Sprintf("%s.id", TableName),
+			fmt.Sprintf("%s.user_id", TableName),
 			fmt.Sprintf("%s.status", TableName),
 			fmt.Sprintf("%s.details", TableName),
 			fmt.Sprintf("%s.bitrate", TableName),
@@ -57,7 +58,7 @@ func (repo *Repository) Retrieve(ctx context.Context, id int64) (jsonapi.Linkabl
 		PlaceholderFormat(sq.Dollar).
 		RunWith(repo.db).
 		QueryRowContext(c).
-		Scan(&request.ID, &request.Status, &request.DetailsDB, &request.Bitrate,
+		Scan(&request.ID, &request.UserID, &request.Status, &request.DetailsDB, &request.Bitrate,
 			&request.ResolutionX, &request.ResolutionY, &request.RatioX, &request.RatioY,
 			&request.VideoName, &origin.ID, &origin.Name, &origin.Size, &origin.Bitrate,
 			&origin.ResolutionX, &origin.ResolutionY, &origin.RatioX, &origin.RatioY,
