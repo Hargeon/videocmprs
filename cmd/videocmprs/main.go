@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -39,9 +38,7 @@ func main() {
 		logger.Fatal("error occurred when run migrations", zap.String("Error", err.Error()))
 	}
 
-	dsn := fmt.Sprintf("user=%s dbname=%s sslmode=%s host=%s port=%s password=%s",
-		os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_SSLMODE"),
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_PASS"))
+	dsn := os.Getenv("DB_URL")
 	db, err := sql.Open("pgx", dsn)
 
 	if err != nil {
@@ -55,9 +52,7 @@ func main() {
 	}
 
 	// init Rabbit publisher
-	publisher := broker.NewRabbit(os.Getenv("RABBIT_USER"),
-		os.Getenv("RABBIT_PASSWORD"), os.Getenv("RABBIT_HOST"),
-		os.Getenv("RABBIT_PORT"))
+	publisher := broker.NewRabbit(os.Getenv("RABBIT_URL"))
 
 	publisherConn, err := publisher.Connect("video_convert_test")
 	if err != nil {
@@ -66,9 +61,7 @@ func main() {
 	defer publisherConn.Close()
 
 	// init Rabbit consumer
-	consumer := broker.NewRabbit(os.Getenv("RABBIT_USER"),
-		os.Getenv("RABBIT_PASSWORD"), os.Getenv("RABBIT_HOST"),
-		os.Getenv("RABBIT_PORT"))
+	consumer := broker.NewRabbit(os.Getenv("RABBIT_URL"))
 
 	consumerConn, err := consumer.Connect("video_update_test")
 	if err != nil {
@@ -115,10 +108,7 @@ func main() {
 }
 
 func runMigrations() error {
-	dsn := fmt.Sprintf("user=%s dbname=%s sslmode=%s host=%s port=%s password=%s",
-		os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_SSLMODE"),
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_PASS"))
-
+	dsn := os.Getenv("DB_URL")
 	db, err := sql.Open("pgx", dsn)
 
 	if err != nil {
