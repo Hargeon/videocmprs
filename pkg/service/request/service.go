@@ -3,6 +3,7 @@ package request
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 	"github.com/Hargeon/videocmprs/pkg/service"
+	"github.com/Hargeon/videocmprs/pkg/service/compress"
 
 	"github.com/google/jsonapi"
 )
@@ -20,14 +22,16 @@ type Service struct {
 	requestRepo  repository.RequestRepository
 	videoRepo    repository.VideoRepository
 	cloudStorage service.CloudStorage
+	publisher    service.Publisher
 }
 
 // NewService initialize Service
-func NewService(rRepo repository.RequestRepository, vRepo repository.VideoRepository, cS service.CloudStorage) *Service {
+func NewService(rRepo repository.RequestRepository, vRepo repository.VideoRepository, cS service.CloudStorage, pb service.Publisher) *Service {
 	return &Service{
 		requestRepo:  rRepo,
 		videoRepo:    vRepo,
 		cloudStorage: cS,
+		publisher:    pb,
 	}
 }
 
@@ -70,7 +74,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 
 	// create video in db
 	videoRes.ServiceID = srvVideoID
-	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes)
+	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes.BuildFields())
 
 	if err != nil {
 		// update request status
@@ -103,7 +107,20 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion")
 	}
 
-	req.OriginalVideo = updatedVideo
+	// send requests to rabbit
+	err = srv.rabbitPublish(req)
+	if err != nil {
+		fields := map[string]interface{}{"status": "failed", "details": `Failed connection to worker`}
+
+		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
+
+		if updateErr != nil {
+			return nil, fmt.Errorf("failed connection to worker: %s, can't update request status: %s",
+				err, updateErr)
+		}
+
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -116,4 +133,19 @@ func (srv *Service) List(ctx context.Context, params *query.Params) ([]interface
 	}
 
 	return requests, nil
+}
+
+func (srv *Service) Retrieve(ctx context.Context, id int64) (jsonapi.Linkable, error) {
+	return srv.requestRepo.Retrieve(ctx, id)
+}
+
+func (srv *Service) rabbitPublish(res *request.Resource) error {
+	req := compress.NewRequest(res)
+	body, err := json.Marshal(req)
+
+	if err != nil {
+		return nil
+	}
+
+	return srv.publisher.Publish(body)
 }

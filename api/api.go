@@ -3,26 +3,32 @@ package api
 
 import (
 	"database/sql"
-	"os"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"fmt"
+	"net/http"
 
 	"github.com/Hargeon/videocmprs/api/auth"
 	"github.com/Hargeon/videocmprs/api/middleware"
 	"github.com/Hargeon/videocmprs/api/request"
 	"github.com/Hargeon/videocmprs/api/user"
-	"github.com/Hargeon/videocmprs/pkg/service/cloud"
+	"github.com/Hargeon/videocmprs/api/video"
+	"github.com/Hargeon/videocmprs/pkg/service"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
-	db *sql.DB
+	db        *sql.DB
+	publisher service.Publisher
+	cs        service.CloudStorage
+	logger    *zap.Logger
 }
 
 // NewHandler returns new Handler
-func NewHandler(db *sql.DB) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *sql.DB, pb service.Publisher, cs service.CloudStorage, logger *zap.Logger) *Handler {
+	return &Handler{db: db, publisher: pb, cs: cs, logger: logger}
 }
 
 // InitRoutes initializes and returns *fiber.App
@@ -32,19 +38,38 @@ func (h *Handler) InitRoutes() *fiber.App {
 	app.Use(logger.New())
 	api := app.Group("/api")
 
+	api.Get("/ready", func(ctx *fiber.Ctx) error {
+		return ctx.SendStatus(http.StatusOK)
+	})
+
+	api.Get("/health", h.health)
+
 	v1 := api.Group("/v1")
 	v1.Use(middleware.AcceptHeader)
-	v1.Mount("/users", user.NewHandler(h.db).InitRoutes())
-	v1.Mount("/auth", auth.NewHandler(h.db).InitRoutes())
+	v1.Mount("/users", user.NewHandler(h.db, h.logger).InitRoutes())
+	v1.Mount("/auth", auth.NewHandler(h.db, h.logger).InitRoutes())
 	v1.Use(middleware.UserIdentify)
 
-	storage := cloud.NewS3Storage(
-		os.Getenv("AWS_BUCKET_NAME"),
-		os.Getenv("AWS_REGION"),
-		os.Getenv("AWS_ACCESS_KEY"),
-		os.Getenv("AWS_SECRET_KEY"))
-
-	v1.Mount("/requests", request.NewHandler(h.db, storage).InitRoutes())
+	v1.Mount("/requests", request.NewHandler(h.db, h.cs, h.publisher, h.logger).InitRoutes())
+	v1.Mount("/videos", video.NewHandler(h.db, h.logger).InitRoutes())
 
 	return app
+}
+
+func (h *Handler) health(c *fiber.Ctx) error {
+	dbStatus := "OK"
+	if err := h.db.Ping(); err != nil {
+		dbStatus = fmt.Sprintf("ERROR: %s", err.Error())
+	}
+
+	rabbitStatus := "OK"
+
+	if err := h.publisher.Ping(); err != nil {
+		rabbitStatus = fmt.Sprintf("ERROR: %s", err.Error())
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"DB":     dbStatus,
+		"Rabbit": rabbitStatus,
+	})
 }

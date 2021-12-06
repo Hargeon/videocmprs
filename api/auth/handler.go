@@ -14,17 +14,19 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
-	srv service.Tokenable
+	srv    service.Tokenable
+	logger *zap.Logger
 }
 
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *sql.DB, logger *zap.Logger) *Handler {
 	repo := user.NewRepository(db)
 	srv := auth.NewService(repo)
 
-	return &Handler{srv: srv}
+	return &Handler{srv: srv, logger: logger}
 }
 
 func (h *Handler) InitRoutes() *fiber.App {
@@ -41,6 +43,8 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 	bodyReader := bytes.NewReader(c.Body())
 
 	if err := jsonapi.UnmarshalPayload(bodyReader, u); err != nil {
+		h.logger.Error("Can't unmarshal request for sign in user", zap.Error(err))
+
 		errors := []string{"Bad request"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -48,6 +52,8 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 
 	validation := validator.New()
 	if err := validation.StructPartial(u, "Email", "Password"); err != nil {
+		h.logger.Error("Validation failed for sign in  user", zap.Error(err))
+
 		errors := []string{"Validation failed"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -55,6 +61,7 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 
 	resource, err := h.srv.GenerateToken(c.Context(), u)
 	if err != nil {
+		h.logger.Error("Generate token", zap.Error(err))
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
@@ -62,6 +69,7 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 
 	err = jsonapi.MarshalPayload(c.Status(http.StatusCreated), resource)
 	if err != nil {
+		h.logger.Error("Invalid response marshaling", zap.Error(err))
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
@@ -82,6 +90,7 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 	res, err := h.srv.Retrieve(c.Context(), id)
 
 	if err != nil {
+		h.logger.Error("Can't retrieve User", zap.Error(err))
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)

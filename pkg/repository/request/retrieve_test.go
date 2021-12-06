@@ -2,7 +2,6 @@ package request
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -33,10 +32,21 @@ func TestRetrieve(t *testing.T) {
 			name: "Should return request",
 			id:   1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", TableName)).
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}).
-						AddRow(1, "original_in_review", "", 1589875, 800, 600, 4, 3, "new_video"))
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
+						1, "original_in_review", "", 1589875, 800, 600, 4, 3, "new_video", 1, "new_video", 15000,
+						78000, 1200, 800, 6, 5, "new_service_id", 2, "converted_video", 12000, 64000,
+						800, 600, 4, 3, "converted_service_id"))
 			},
 			expectedID:          1,
 			expectedStatus:      "original_in_review",
@@ -53,9 +63,18 @@ func TestRetrieve(t *testing.T) {
 			name: "Should not return request",
 			id:   1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, status, details, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, video_name FROM %s", TableName)).
+				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "status", "details", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "video_name"}))
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+						"requests.details", "requests.bitrate", "requests.resolution_x",
+						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
+						"requests.video_name", "origin_video.id", "origin_video.name",
+						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
+						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
+						"origin_video.service_id", "converted_video.id", "converted_video.name",
+						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
+						"converted_video.resolution_y", "converted_video.ratio_x",
+						"converted_video.ratio_y", "converted_video.service_id"}))
 			},
 			errorPresent: true,
 		},
