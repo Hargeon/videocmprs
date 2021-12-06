@@ -19,6 +19,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 type cloudMock struct{}
@@ -47,7 +48,10 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db, new(cloudMock), new(rabbitSuccess))
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	h := NewHandler(db, new(cloudMock), new(rabbitSuccess), logger)
 
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
@@ -486,7 +490,10 @@ func TestList(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db, new(cloudMock), new(rabbitSuccess))
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	h := NewHandler(db, new(cloudMock), new(rabbitSuccess), logger)
 
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
@@ -670,7 +677,10 @@ func TestRetrieve(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db, new(cloudMock), new(rabbitSuccess))
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	h := NewHandler(db, new(cloudMock), new(rabbitSuccess), logger)
 	app := fiber.New()
 	app.Mount("/requests", h.InitRoutes())
 

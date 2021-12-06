@@ -15,6 +15,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 func TestCreate(t *testing.T) {
@@ -23,7 +24,10 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	handler := NewHandler(db)
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	handler := NewHandler(db, logger)
 	app := fiber.New()
 
 	app.Post("/", handler.create)

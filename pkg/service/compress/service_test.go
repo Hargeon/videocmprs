@@ -9,6 +9,7 @@ import (
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"go.uber.org/zap"
 )
 
 func TestService_AddConvertedVideo(t *testing.T) {
@@ -77,7 +78,10 @@ func TestService_AddConvertedVideo(t *testing.T) {
 			testCase.mock()
 			reqRepo := request.NewRepository(db)
 			vRepo := video.NewRepository(db)
-			srv := NewService(reqRepo, vRepo)
+			logger := zap.NewExample()
+			defer logger.Sync()
+
+			srv := NewService(reqRepo, vRepo, logger)
 
 			id, err := srv.AddConvertedVideo(context.Background(), testCase.video)
 			if err != nil && !testCase.errorPresent {
@@ -289,7 +293,11 @@ func TestService_Update(t *testing.T) {
 			testCase.mock()
 			reqRepo := request.NewRepository(db)
 			vRepo := video.NewRepository(db)
-			srv := NewService(reqRepo, vRepo)
+
+			logger := zap.NewExample()
+			defer logger.Sync()
+
+			srv := NewService(reqRepo, vRepo, logger)
 
 			err := srv.UpdateRequest(context.Background(), testCase.data)
 
@@ -380,7 +388,11 @@ func TestService_UpdateOriginalVideo(t *testing.T) {
 			testCase.mock()
 			reqRepo := request.NewRepository(db)
 			vRepo := video.NewRepository(db)
-			srv := NewService(reqRepo, vRepo)
+
+			logger := zap.NewExample()
+			defer logger.Sync()
+
+			srv := NewService(reqRepo, vRepo, logger)
 
 			err := srv.UpdateOriginalVideo(context.Background(), testCase.video)
 			if err != nil && !testCase.errorPresent {
@@ -467,7 +479,11 @@ func TestService_UpdateRequestStatus(t *testing.T) {
 			testCase.mock()
 			reqRepo := request.NewRepository(db)
 			vRepo := video.NewRepository(db)
-			srv := NewService(reqRepo, vRepo)
+
+			logger := zap.NewExample()
+			defer logger.Sync()
+
+			srv := NewService(reqRepo, vRepo, logger)
 
 			err := srv.UpdateRequestStatus(context.Background(), testCase.id, testCase.status, testCase.details)
 

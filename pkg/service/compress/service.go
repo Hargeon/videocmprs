@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/video"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,13 +21,15 @@ const (
 type Service struct {
 	reqRepo repository.Updater
 	vRepo   repository.VideoRepository
+	logger  *zap.Logger
 }
 
 // NewService initialize Service
-func NewService(reqRepo repository.Updater, vRepo repository.VideoRepository) *Service {
+func NewService(reqRepo repository.Updater, vRepo repository.VideoRepository, logger *zap.Logger) *Service {
 	return &Service{
 		reqRepo: reqRepo,
 		vRepo:   vRepo,
+		logger:  logger,
 	}
 }
 
@@ -34,7 +37,7 @@ func NewService(reqRepo repository.Updater, vRepo repository.VideoRepository) *S
 func (srv *Service) UpdateRequest(ctx context.Context, data []byte) error {
 	res := new(Response)
 	if err := json.Unmarshal(data, res); err != nil {
-		log.Println("Unmarshal from rabbit", err) // TODO need add logger
+		srv.logger.Error("Unmarshal from rabbit", zap.Error(err))
 
 		return ErrInvalidResponse
 	}
@@ -44,7 +47,7 @@ func (srv *Service) UpdateRequest(ctx context.Context, data []byte) error {
 		err := srv.UpdateRequestStatus(ctx, res.RequestID, failedStatus, res.Error)
 
 		if err != nil {
-			log.Println("update request status", err) // TODO need add logger
+			srv.logger.Error("Update request status", zap.Error(err))
 
 			return err
 		}
@@ -59,22 +62,23 @@ func (srv *Service) UpdateRequest(ctx context.Context, data []byte) error {
 		if err == nil {
 			fields := map[string]interface{}{"status": completedStatus, "converted_file_id": id}
 			_, reqErr := srv.reqRepo.Update(context.Background(), res.RequestID, fields)
+
 			if reqErr != nil {
-				log.Println("updating request status", reqErr) // TODO need add logger
+				srv.logger.Error("updating request status", zap.Error(reqErr))
 			}
 		} else {
 			msg := fmt.Sprintf("Сan't add converted video to db, id: %s",
 				res.ConvertedVideo.ServiceID)
 			err = srv.UpdateRequestStatus(ctx, res.RequestID, failedStatus, msg)
 			if err != nil {
-				log.Println(err) // TODO need add logger
+				srv.logger.Error("can't update request status", zap.Error(err))
 			}
 		}
 	} else {
 		msg := "Converted video does not present"
 		err := srv.UpdateRequestStatus(ctx, res.RequestID, failedStatus, msg)
 		if err != nil {
-			log.Println(err) // TODO need add logger
+			srv.logger.Error("can't update request status", zap.Error(err))
 		}
 	}
 

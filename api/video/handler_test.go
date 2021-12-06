@@ -11,6 +11,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 func TestRetrieve(t *testing.T) {
@@ -19,7 +20,10 @@ func TestRetrieve(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db)
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	h := NewHandler(db, logger)
 	app := fiber.New()
 	app.Mount("/videos", h.InitRoutes())
 

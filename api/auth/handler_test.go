@@ -16,6 +16,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 func TestSignIn(t *testing.T) {
@@ -25,7 +26,10 @@ func TestSignIn(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	handler := NewHandler(db)
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	handler := NewHandler(db, logger)
 	app := fiber.New()
 
 	app.Post("/", handler.signIn)
@@ -192,7 +196,10 @@ func TestRetrieve(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	handler := NewHandler(db)
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	handler := NewHandler(db, logger)
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user_id", int64(1))

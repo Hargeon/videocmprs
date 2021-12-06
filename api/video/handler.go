@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,16 +21,15 @@ const (
 )
 
 type Handler struct {
-	srv service.Retriever
+	srv    service.Retriever
+	logger *zap.Logger
 }
 
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *sql.DB, logger *zap.Logger) *Handler {
 	repo := video.NewRepository(db)
 	vSrv := videosrv.NewService(repo)
 
-	return &Handler{
-		srv: vSrv,
-	}
+	return &Handler{srv: vSrv, logger: logger}
 }
 
 func (h *Handler) InitRoutes() *fiber.App {
@@ -52,6 +52,9 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 	res, err := h.srv.Retrieve(c.Context(), id)
 
 	if err != nil {
+		h.logger.Error("Get video", zap.String("Error", err.Error()),
+			zap.Int64("Video ID", id))
+
 		errors := []string{"Can not fetch video"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)

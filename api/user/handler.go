@@ -14,18 +14,20 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
-	srv service.Creator
+	srv    service.Creator
+	logger *zap.Logger
 }
 
 // NewHandler initialize Handler
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *sql.DB, logger *zap.Logger) *Handler {
 	repo := user.NewRepository(db)
 	srv := usersrv.NewService(repo)
 
-	return &Handler{srv: srv}
+	return &Handler{srv: srv, logger: logger}
 }
 
 // InitRoutes for users
@@ -42,6 +44,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	bodyReader := bytes.NewReader(c.Body())
 
 	if err := jsonapi.UnmarshalPayload(bodyReader, usr); err != nil {
+		h.logger.Error("Can't unmarshal request for creating user", zap.Error(err))
 		errors := []string{"Bad request"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -51,6 +54,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	err := validation.Struct(usr)
 
 	if err != nil {
+		h.logger.Error("Validation for creating user failed", zap.Error(err))
 		errors := []string{"Validation failed"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -59,6 +63,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	res, err := h.srv.Create(c.Context(), usr)
 
 	if err != nil {
+		h.logger.Error("Can't create user", zap.Error(err))
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
@@ -67,6 +72,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	err = jsonapi.MarshalPayload(c.Status(http.StatusCreated), res)
 
 	if err != nil {
+		h.logger.Error("Invalid response marshaling", zap.Error(err))
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)

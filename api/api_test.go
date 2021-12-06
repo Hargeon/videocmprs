@@ -13,6 +13,7 @@ import (
 	"github.com/Hargeon/videocmprs/pkg/service"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"go.uber.org/zap"
 )
 
 type cloudMock struct{}
@@ -51,7 +52,10 @@ func TestReady(t *testing.T) {
 		t.Fatalf("Unexpected error when opening a stub db connection, error: %s\n", err)
 	}
 
-	h := NewHandler(db, new(rabbitSuccess), new(cloudMock))
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	h := NewHandler(db, new(rabbitSuccess), new(cloudMock), logger)
 
 	app := h.InitRoutes()
 
@@ -107,7 +111,10 @@ func TestHealth(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			db := testCase.dbMock()
-			h := NewHandler(db, testCase.rabbitConn, new(cloudMock))
+			logger := zap.NewExample()
+			defer logger.Sync()
+
+			h := NewHandler(db, testCase.rabbitConn, new(cloudMock), logger)
 
 			app := h.InitRoutes()
 

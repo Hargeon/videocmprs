@@ -23,6 +23,9 @@ require (
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/streadway/amqp v1.0.0
 	github.com/valyala/fasthttp v1.30.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211020060615-d418f374d309 // indirect
 	golang.org/x/sys v0.0.0-20211002104244-808efd93c36d // indirect

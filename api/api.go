@@ -16,17 +16,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
 	db        *sql.DB
 	publisher service.Publisher
 	cs        service.CloudStorage
+	logger    *zap.Logger
 }
 
 // NewHandler returns new Handler
-func NewHandler(db *sql.DB, pb service.Publisher, cs service.CloudStorage) *Handler {
-	return &Handler{db: db, publisher: pb, cs: cs}
+func NewHandler(db *sql.DB, pb service.Publisher, cs service.CloudStorage, logger *zap.Logger) *Handler {
+	return &Handler{db: db, publisher: pb, cs: cs, logger: logger}
 }
 
 // InitRoutes initializes and returns *fiber.App
@@ -44,12 +46,12 @@ func (h *Handler) InitRoutes() *fiber.App {
 
 	v1 := api.Group("/v1")
 	v1.Use(middleware.AcceptHeader)
-	v1.Mount("/users", user.NewHandler(h.db).InitRoutes())
-	v1.Mount("/auth", auth.NewHandler(h.db).InitRoutes())
+	v1.Mount("/users", user.NewHandler(h.db, h.logger).InitRoutes())
+	v1.Mount("/auth", auth.NewHandler(h.db, h.logger).InitRoutes())
 	v1.Use(middleware.UserIdentify)
 
-	v1.Mount("/requests", request.NewHandler(h.db, h.cs, h.publisher).InitRoutes())
-	v1.Mount("/videos", video.NewHandler(h.db).InitRoutes())
+	v1.Mount("/requests", request.NewHandler(h.db, h.cs, h.publisher, h.logger).InitRoutes())
+	v1.Mount("/videos", video.NewHandler(h.db, h.logger).InitRoutes())
 
 	return app
 }
