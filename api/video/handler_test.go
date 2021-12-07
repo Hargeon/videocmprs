@@ -25,6 +25,11 @@ func TestRetrieve(t *testing.T) {
 
 	h := NewHandler(db, logger)
 	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user_id", int64(1))
+
+		return c.Next()
+	})
 	app.Mount("/videos", h.InitRoutes())
 
 	cases := []struct {
@@ -48,9 +53,9 @@ func TestRetrieve(t *testing.T) {
 		{
 			name: "Invalid db connection",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}))
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", video.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(mock.NewRows([]string{"id"}))
 			},
 			requestMock: func() *http.Request {
 				req := httptest.NewRequest(http.MethodGet, "/videos/1", nil)
@@ -63,6 +68,10 @@ func TestRetrieve(t *testing.T) {
 		{
 			name: "Valid db connection",
 			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", video.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(mock.NewRows([]string{"id"}).AddRow(1))
+
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).

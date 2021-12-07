@@ -19,6 +19,7 @@ func TestRetrieve(t *testing.T) {
 	cases := []struct {
 		name                string
 		id                  int64
+		userID              int64
 		mock                func()
 		expectedID          int64
 		expectedSize        int64
@@ -32,9 +33,14 @@ func TestRetrieve(t *testing.T) {
 		errorPresent        bool
 	}{
 		{
-			name: "Should find video",
-			id:   1,
+			name:   "Should find video",
+			id:     1,
+			userID: 1,
 			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", video.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(mock.NewRows([]string{"id"}).AddRow(1))
+
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
@@ -52,12 +58,13 @@ func TestRetrieve(t *testing.T) {
 			errorPresent:        false,
 		},
 		{
-			name: "Should not find video",
-			id:   1,
+			name:   "Should not find video",
+			id:     1,
+			userID: 1,
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}))
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", video.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(mock.NewRows([]string{"id"}))
 			},
 			errorPresent: true,
 		},
@@ -69,7 +76,7 @@ func TestRetrieve(t *testing.T) {
 			testCase.mock()
 			repo := video.NewRepository(db)
 			srv := NewService(repo)
-			linkable, err := srv.Retrieve(context.Background(), testCase.id)
+			linkable, err := srv.Retrieve(context.Background(), testCase.userID, testCase.id)
 			if err != nil && !testCase.errorPresent {
 				t.Errorf("Unexpected error: %s\n", err)
 			}

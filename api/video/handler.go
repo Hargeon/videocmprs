@@ -21,7 +21,7 @@ const (
 )
 
 type Handler struct {
-	srv    service.Retriever
+	srv    service.RetrieveRelation
 	logger *zap.Logger
 }
 
@@ -40,6 +40,16 @@ func (h *Handler) InitRoutes() *fiber.App {
 }
 
 func (h *Handler) retrieve(c *fiber.Ctx) error {
+	uID, ok := c.Locals("user_id").(int64)
+
+	if !ok {
+		h.logger.Error("Invalid type assertion for User ID")
+
+		errors := []string{"Invalid user ID"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
 	idStr := c.Params("id")
 	id, err := strconv.ParseInt(idStr, IDBase, IDBitSize)
 
@@ -49,7 +59,7 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
-	res, err := h.srv.Retrieve(c.Context(), id)
+	res, err := h.srv.Retrieve(c.Context(), uID, id)
 
 	if err != nil {
 		h.logger.Error("Get video", zap.String("Error", err.Error()),
