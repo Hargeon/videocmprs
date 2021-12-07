@@ -18,6 +18,7 @@ func TestNewRequest(t *testing.T) {
 			name: "With resolution",
 			args: &request.Resource{
 				ID:          1,
+				UserID:      1,
 				ResolutionX: 800,
 				ResolutionY: 600,
 				OriginalVideo: &video.Resource{
@@ -27,6 +28,7 @@ func TestNewRequest(t *testing.T) {
 			},
 			want: &Request{
 				RequestID:      1,
+				UserID:         1,
 				Resolution:     "800:600",
 				Ratio:          "",
 				VideoID:        1,
@@ -37,6 +39,7 @@ func TestNewRequest(t *testing.T) {
 			name: "With ratio",
 			args: &request.Resource{
 				ID:     1,
+				UserID: 1,
 				RatioX: 4,
 				RatioY: 3,
 				OriginalVideo: &video.Resource{
@@ -46,6 +49,7 @@ func TestNewRequest(t *testing.T) {
 			},
 			want: &Request{
 				RequestID:      1,
+				UserID:         1,
 				Ratio:          "4:3",
 				VideoID:        1,
 				VideoServiceID: "test_video",
@@ -55,6 +59,7 @@ func TestNewRequest(t *testing.T) {
 			name: "With bitrate",
 			args: &request.Resource{
 				ID:      1,
+				UserID:  1,
 				Bitrate: 64000,
 				OriginalVideo: &video.Resource{
 					ID:        1,
@@ -63,6 +68,7 @@ func TestNewRequest(t *testing.T) {
 			},
 			want: &Request{
 				RequestID:      1,
+				UserID:         1,
 				Bitrate:        64000,
 				VideoID:        1,
 				VideoServiceID: "test_video",
@@ -72,6 +78,7 @@ func TestNewRequest(t *testing.T) {
 			name: "With all fields",
 			args: &request.Resource{
 				ID:          1,
+				UserID:      1,
 				Bitrate:     64000,
 				ResolutionX: 800,
 				ResolutionY: 600,
@@ -84,6 +91,7 @@ func TestNewRequest(t *testing.T) {
 			},
 			want: &Request{
 				RequestID:      1,
+				UserID:         1,
 				Bitrate:        64000,
 				Resolution:     "800:600",
 				Ratio:          "4:3",

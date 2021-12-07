@@ -150,7 +150,7 @@ func TestSignIn(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"errors":[{"title":"sql: no rows in result set"}]}` + "\n",
+			expectedBody:   `{"errors":[{"title":"User does not present"}]}` + "\n",
 		},
 	}
 
@@ -243,7 +243,7 @@ func TestRetrieve(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"errors":[{"title":"sql: no rows in result set"}]}` + "\n",
+			expectedBody:   `{"errors":[{"title":"Can't retrieve User"}]}` + "\n",
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
