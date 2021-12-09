@@ -33,7 +33,7 @@ type Handler struct {
 func NewHandler(db *sql.DB, cS service.CloudStorage, pb service.Publisher, logger *zap.Logger) *Handler {
 	reqRepo := reqrepo.NewRepository(db)
 	vRepo := video.NewRepository(db)
-	srv := request.NewService(reqRepo, vRepo, cS, pb)
+	srv := request.NewService(reqRepo, vRepo, cS, pb, logger)
 
 	return &Handler{srv: srv, logger: logger}
 }

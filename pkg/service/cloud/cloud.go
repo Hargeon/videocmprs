@@ -5,13 +5,17 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
 )
+
+const presignTime = time.Minute
 
 // AWSS3 represent aws s3 storage
 type AWSS3 struct {
@@ -38,17 +42,10 @@ func (cloud *AWSS3) Upload(ctx context.Context, header *multipart.FileHeader) (s
 		return "", err
 	}
 
-	sess, err := session.NewSession(
-		&aws.Config{
-			Region: aws.String(cloud.region),
-			Credentials: credentials.NewStaticCredentials(
-				cloud.accessKey,
-				cloud.secretKey,
-				""), // a token will be created when the session it's used.
-		})
+	sess, err := cloud.session()
 
 	if err != nil {
-		return "nil", err
+		return "", err
 	}
 
 	uploader := s3manager.NewUploader(sess)
@@ -65,4 +62,31 @@ func (cloud *AWSS3) Upload(ctx context.Context, header *multipart.FileHeader) (s
 	}
 
 	return newFileName, nil
+}
+
+func (cloud *AWSS3) URL(filename string) (string, error) {
+	sess, err := cloud.session()
+
+	if err != nil {
+		return "", err
+	}
+
+	s3svc := s3.New(sess)
+	req, _ := s3svc.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(cloud.bucketName),
+		Key:    aws.String(filename),
+	})
+
+	return req.Presign(presignTime)
+}
+
+func (cloud *AWSS3) session() (*session.Session, error) {
+	return session.NewSession(
+		&aws.Config{
+			Region: aws.String(cloud.region),
+			Credentials: credentials.NewStaticCredentials(
+				cloud.accessKey,
+				cloud.secretKey,
+				""), // a token will be created when the session it's used.
+		})
 }

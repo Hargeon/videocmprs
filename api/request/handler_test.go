@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
-	"github.com/Hargeon/videocmprs/pkg/repository/video"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/fiber/v2"
@@ -30,6 +29,10 @@ func (c *cloudMock) Upload(ctx context.Context, header *multipart.FileHeader) (s
 	}
 
 	return "mock_service_id", nil
+}
+
+func (c *cloudMock) URL(filename string) (string, error) {
+	return filename, nil
 }
 
 type rabbitSuccess struct{}
@@ -333,38 +336,8 @@ func TestCreate(t *testing.T) {
 						1, 1, "original_in_review", "", 64000, 800, 600, 4, 3, "test_video.mkv", nil, nil, nil,
 						nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 						nil, nil, nil, nil, nil))
-
-				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs("test_video.mkv", "mock_service_id", 1441786, 1).
-					WillReturnRows(sqlmock.NewRows([]string{"id"}).
-						AddRow(1))
-
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
-						AddRow(1, "test_video.mkv", 1441786, 0, 0, 0, 0, 0, "mock_service_id"))
-
-				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
-					WithArgs(1, 1).
-					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-
-				mock.ExpectQuery("SELECT requests.id, requests.user_id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.user_id", "requests.status",
-						"requests.details", "requests.bitrate", "requests.resolution_x",
-						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
-						"requests.video_name", "origin_video.id", "origin_video.name",
-						"origin_video.size", "origin_video.bitrate", "origin_video.resolution_x",
-						"origin_video.resolution_y", "origin_video.ratio_x", "origin_video.ratio_y",
-						"origin_video.service_id", "converted_video.id", "converted_video.name",
-						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
-						"converted_video.resolution_y", "converted_video.ratio_x",
-						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
-						1, 1, "original_in_review", "", 64000, 800, 600, 4, 3, "test_video.mkv", 1, "test_video.mkv",
-						1441786, 0, 0, 0, 0, 0, "mock_service_id", nil, nil, nil, nil,
-						nil, nil, nil, nil, nil))
 			},
-			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review","video_name":"test_video.mkv"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}},"included":[{"type":"videos","id":"1","attributes":{"name":"test_video.mkv","size":1441786},"links":{"self":"/api/v1/videos/1"}}]}` + "\n",
+			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"status":"original_in_review","video_name":"test_video.mkv"},"links":{"self":"/api/v1/requests/1"}}}` + "\n",
 			expectedStatus: http.StatusCreated,
 		},
 		{
@@ -443,7 +416,7 @@ func TestCreate(t *testing.T) {
 
 			strBody := string(resBody)
 			if strBody != testCase.expectedBody {
-				t.Errorf("Invalid body\nexpected: %#v\ngot: %#v\n",
+				t.Errorf("Invalid body\nexpected: %s\ngot: %s\n",
 					testCase.expectedBody, strBody)
 			}
 
@@ -607,7 +580,7 @@ func TestList(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"/api/v1/videos/1"}}]}` + "\n",
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"download":"/api/v1/videos/download_url/1","self":"/api/v1/videos/1"}}]}` + "\n",
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -634,7 +607,7 @@ func TestList(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"/api/v1/videos/1"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"self":"/api/v1/videos/2"}}]}` + "\n",
+			expectedBody:   `{"data":[{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}}],"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"download":"/api/v1/videos/download_url/1","self":"/api/v1/videos/1"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"download":"/api/v1/videos/download_url/2","self":"/api/v1/videos/2"}}]}` + "\n",
 			expectedStatus: http.StatusOK,
 		},
 	}
@@ -660,7 +633,7 @@ func TestList(t *testing.T) {
 			}
 
 			if string(resBody) != testCase.expectedBody {
-				t.Errorf("Invalid body,\nexpected: %#v\ngot: %#v\n",
+				t.Errorf("Invalid body,\nexpected: %s\ngot: %s\n",
 					testCase.expectedBody, string(resBody))
 			}
 
@@ -750,7 +723,7 @@ func TestRetrieve(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}},"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"self":"/api/v1/videos/1"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"self":"/api/v1/videos/2"}}]}` + "\n",
+			expectedBody:   `{"data":{"type":"requests","id":"1","attributes":{"bitrate":64000,"ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"video_name":"new_video"},"relationships":{"converted_video":{"data":{"type":"videos","id":"2"}},"original_video":{"data":{"type":"videos","id":"1"}}},"links":{"self":"/api/v1/requests/1"}},"included":[{"type":"videos","id":"1","attributes":{"bitrate":78000,"name":"new_video","ratio_x":6,"ratio_y":5,"resolution_x":1200,"resolution_y":800,"size":15000},"links":{"download":"/api/v1/videos/download_url/1","self":"/api/v1/videos/1"}},{"type":"videos","id":"2","attributes":{"bitrate":64000,"name":"converted_video","ratio_x":4,"ratio_y":3,"resolution_x":800,"resolution_y":600,"size":12000},"links":{"download":"/api/v1/videos/download_url/2","self":"/api/v1/videos/2"}}]}` + "\n",
 			expectedStatus: http.StatusOK,
 		},
 	}

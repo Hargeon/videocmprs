@@ -51,7 +51,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 	v1.Use(middleware.UserIdentify)
 
 	v1.Mount("/requests", request.NewHandler(h.db, h.cs, h.publisher, h.logger).InitRoutes())
-	v1.Mount("/videos", video.NewHandler(h.db, h.logger).InitRoutes())
+	v1.Mount("/videos", video.NewHandler(h.db, h.cs, h.logger).InitRoutes())
 
 	return app
 }

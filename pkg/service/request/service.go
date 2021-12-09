@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"mime/multipart"
 
 	"github.com/Hargeon/videocmprs/api/query"
 	"github.com/Hargeon/videocmprs/pkg/repository"
@@ -15,6 +15,7 @@ import (
 	"github.com/Hargeon/videocmprs/pkg/service/compress"
 
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 // Service for adding and changing requests
@@ -23,15 +24,17 @@ type Service struct {
 	videoRepo    repository.VideoRepository
 	cloudStorage service.CloudStorage
 	publisher    service.Publisher
+	logger       *zap.Logger
 }
 
 // NewService initialize Service
-func NewService(rRepo repository.RequestRepository, vRepo repository.VideoRepository, cS service.CloudStorage, pb service.Publisher) *Service {
+func NewService(rRepo repository.RequestRepository, vRepo repository.VideoRepository, cS service.CloudStorage, pb service.Publisher, logger *zap.Logger) *Service {
 	return &Service{
 		requestRepo:  rRepo,
 		videoRepo:    vRepo,
 		cloudStorage: cS,
 		publisher:    pb,
+		logger:       logger,
 	}
 }
 
@@ -42,7 +45,7 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion *request.Resource in service")
 	}
 
-	videoRes := res.OriginalVideo
+	vid := res.OriginalVideo
 	videoFile := res.VideoRequest
 
 	linkable, err := srv.requestRepo.Create(ctx, resource)
@@ -55,74 +58,83 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, errors.New("invalid type assertion *request.Resource in service")
 	}
 
-	// upload video to cloud
-	req.VideoRequest = videoFile
-	srvVideoID, err := srv.cloudStorage.Upload(ctx, req.VideoRequest)
+	go srv.addVideo(ctx, *req, *vid, *videoFile)
 
+	return req, nil
+}
+
+// addVideo to cloud and db
+func (srv *Service) addVideo(ctx context.Context, req request.Resource, vid video.Resource, videoFile multipart.FileHeader) {
+	cloudVideoID, err := srv.cloudStorage.Upload(ctx, &videoFile)
 	if err != nil {
+		srv.logger.Error("can't upload video to cloud", zap.Error(err))
 		// update request status
 		fields := map[string]interface{}{"status": "failed", "details": "Can't upload video to cloud"}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 
 		if updateErr != nil {
-			return nil, fmt.Errorf("can't upload video to cloud: %s, can't update request status: %s",
-				err.Error(), updateErr.Error())
+			srv.logger.Error("can't update request status", zap.Error(updateErr))
 		}
 
-		return nil, err
+		return
 	}
 
 	// create video in db
-	videoRes.ServiceID = srvVideoID
-	videoLinkable, err := srv.videoRepo.Create(ctx, videoRes.BuildFields())
+	vid.ServiceID = cloudVideoID
+	videoLinkable, err := srv.videoRepo.Create(ctx, vid.BuildFields())
 
 	if err != nil {
+		srv.logger.Error("can't add video to database", zap.Error(err))
 		// update request status
 		fields := map[string]interface{}{"status": "failed", "details": `Can't add video to database`}
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 
 		if updateErr != nil {
-			return nil, fmt.Errorf("can't add video to database: %s, can't update request status: %s",
-				err, updateErr)
+			srv.logger.Error("can't update request status", zap.Error(err))
 		}
 
-		return nil, err
+		return
 	}
 
-	updatedVideo, ok := videoLinkable.(*video.Resource)
+	createdVideo, ok := videoLinkable.(*video.Resource)
 	if !ok {
-		return nil, errors.New("invalid type assertion *video.Resource in service after video update")
+		srv.logger.Error("invalid type assertion *video.Resource in service after creating video")
+
+		return
 	}
 
 	// add original_file_id in request
-	fields := map[string]interface{}{"original_file_id": updatedVideo.ID}
-	linkable, err = srv.requestRepo.Update(ctx, req.ID, fields)
+	fields := map[string]interface{}{"original_file_id": createdVideo.ID}
+	requestLinkable, err := srv.requestRepo.Update(ctx, req.ID, fields)
 
 	if err != nil {
-		return nil, err
+		srv.logger.Error("Can't add original_file_id to request", zap.Error(err))
+
+		return
 	}
 
-	req, ok = linkable.(*request.Resource)
+	updatedReq, ok := requestLinkable.(*request.Resource)
 	if !ok {
-		return nil, errors.New("invalid type assertion")
+		srv.logger.Error("invalid type assertion for *request.Resource after adding original_file_id")
+
+		return
 	}
 
 	// send requests to rabbit
-	err = srv.rabbitPublish(req)
+	err = srv.rabbitPublish(updatedReq)
 	if err != nil {
+		srv.logger.Error("Can't add request to rabbit", zap.Error(err))
+
 		fields := map[string]interface{}{"status": "failed", "details": `Failed connection to worker`}
 
 		_, updateErr := srv.requestRepo.Update(ctx, req.ID, fields)
 
 		if updateErr != nil {
-			return nil, fmt.Errorf("failed connection to worker: %s, can't update request status: %s",
-				err, updateErr)
+			srv.logger.Error("can't update request status", zap.Error(err))
 		}
 
-		return nil, err
+		return
 	}
-
-	return req, nil
 }
 
 // List returns []*request.Resource
@@ -135,6 +147,7 @@ func (srv *Service) List(ctx context.Context, params *query.Params) ([]interface
 	return requests, nil
 }
 
+// Retrieve function check if user has request and return it
 func (srv *Service) Retrieve(ctx context.Context, userID, relationID int64) (jsonapi.Linkable, error) {
 	id, err := srv.requestRepo.RelationExists(ctx, userID, relationID)
 	if err != nil {

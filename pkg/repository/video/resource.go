@@ -100,7 +100,13 @@ func (r *Resource) BuildFields() map[string]interface{} {
 
 // JSONAPILinks ...
 func (r *Resource) JSONAPILinks() *jsonapi.Links {
-	return &jsonapi.Links{
+	links := jsonapi.Links{
 		"self": fmt.Sprintf("%s/api/v1/videos/%d", os.Getenv("BASE_URL"), r.ID),
 	}
+
+	if r.ServiceID != "" {
+		links["download"] = fmt.Sprintf("%s/api/v1/videos/download_url/%d", os.Getenv("BASE_URL"), r.ID)
+	}
+
+	return &links
 }

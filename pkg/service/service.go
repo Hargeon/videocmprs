@@ -33,12 +33,19 @@ type Tokenable interface {
 
 type CloudStorage interface {
 	Upload(ctx context.Context, header *multipart.FileHeader) (string, error)
+	URL(filename string) (string, error)
 }
 
 type Request interface {
 	Creator
 	RetrieveRelation
 	Paginator
+}
+
+type Video interface {
+	RetrieveRelation
+
+	DownloadURL(ctx context.Context, userID, videoID int64) (string, error)
 }
 
 type Publisher interface {
