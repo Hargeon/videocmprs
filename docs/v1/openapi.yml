@@ -1,0 +1,774 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Video compress service
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    email: hirami14590@gmail.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  requestBodies:
+    SignInRequest:
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - users
+                  attributes:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                        minLength: 6
+                        maxLength: 32
+                        required: true
+                      password:
+                        type: string
+                        minLength: 6
+                        maxLength: 250
+                        required: true
+    RegisterUserRequest:
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - users
+                  attributes:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                        minLength: 6
+                        maxLength: 32
+                        required: true
+                      password:
+                        type: string
+                        minLength: 6
+                        maxLength: 250
+                        required: true
+                      password_confirmation:
+                        type: string
+                        minLength: 6
+                        maxLength: 250
+                        required: true
+    CreateRequest:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              video:
+                type: string
+                format: binary
+              requests:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      attributes:
+                        type: object
+                        properties:
+                          bitrate:
+                            type: integer
+                            format: int64
+                            required: false
+                          resolution_x:
+                            type: integer
+                            required: false
+                          resolution_y:
+                            type: integer
+                            required: false
+                          ratio_x:
+                            type: integer
+                            required: false
+                          ratio_y:
+                            type: integer
+                            required: false
+  responses:
+    RetrieveRequestsList:
+      description: Response return list of requests
+      content:
+        application/vnd.api+json:
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                links:
+                  type: object
+                  properties:
+                    self:
+                      enum:
+                        - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/requests/{id}
+                included:
+                  type: array
+                  default: null
+                  description: Original and Converted video
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        enum:
+                          - videos
+                      id:
+                        type: integer
+                        format: int64
+                      links:
+                        type: object
+                        properties:
+                          self:
+                            enum:
+                              - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                      attributes:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: Video name
+                            required: true
+                          size:
+                            type: integer
+                            format: int64
+                            description: Video size
+                            required: true
+                          bitrate:
+                            type: integer
+                            format: int64
+                            required: false
+                            description: Video bitrate
+                            default: null
+                          resolution_x:
+                            type: integer
+                            required: false
+                            description: Video resolution on X plane
+                            default: null
+                          resolution_y:
+                            type: integer
+                            required: false
+                            description: Video resolution on Y plane
+                            default: null
+                          ratio_x:
+                            type: integer
+                            required: false
+                            description: Aspect ration for video on X plane
+                            default: null
+                          ratio_y:
+                            type: integer
+                            required: false
+                            description: Aspect ration for video on Y plane
+                            default: null
+                data:
+                  type: object
+                  properties:
+                    type:
+                      enum:
+                        - requests
+                    id:
+                      type: integer
+                      format: int64
+                    relationships:
+                      type: object
+                      default: null
+                      properties:
+                        original_video:
+                          type: object
+                          default: null
+                          properties:
+                            links:
+                              type: object
+                              properties:
+                                self:
+                                  enum:
+                                    - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                            data:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  format: int64
+                                type:
+                                  enum:
+                                    - videos
+                        converted_video:
+                          type: object
+                          default: null
+                          properties:
+                            links:
+                              type: object
+                              properties:
+                                self:
+                                  enum:
+                                    - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                            data:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  format: int64
+                                type:
+                                  enum:
+                                    - videos
+                    attributes:
+                      type: object
+                      properties:
+                        video_name:
+                          type: string
+                        status:
+                          enum:
+                            - original_in_review
+                            - failed
+                            - success
+                          description: Status of video
+                        details:
+                          type: string
+                          default: null
+                          description: Describe why video didn't complete
+                        bitrate:
+                          type: integer
+                          format: int64
+                          description: Requested Bitrate
+                          default: null
+                        resolution_x:
+                          type: integer
+                          description: Requested Resolution on X plane
+                          default: null
+                        resolution_y:
+                          type: integer
+                          description: Requests Resolution on Y plane
+                          default: null
+                        ratio_x:
+                          type: integer
+                          description: Requested aspect ratio on X plane
+                          default: null
+                        ratio_y:
+                          type: integer
+                          description: Requested aspect ratio on Y plane
+                          default: null
+    RetrieveRequest:
+      description: Response return request
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              links:
+                type: object
+                properties:
+                  self:
+                    enum:
+                      - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/requests/{id}
+              included:
+                type: array
+                default: null
+                description: Original and Converted video
+                items:
+                  type: object
+                  properties:
+                    type:
+                      enum:
+                        - videos
+                    id:
+                      type: integer
+                      format: int64
+                    links:
+                      type: object
+                      properties:
+                        self:
+                          enum:
+                            - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                    attributes:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Video name
+                          required: true
+                        size:
+                          type: integer
+                          format: int64
+                          description: Video size
+                          required: true
+                        bitrate:
+                          type: integer
+                          format: int64
+                          required: false
+                          description: Video bitrate
+                          default: null
+                        resolution_x:
+                          type: integer
+                          required: false
+                          description: Video resolution on X plane
+                          default: null
+                        resolution_y:
+                          type: integer
+                          required: false
+                          description: Video resolution on Y plane
+                          default: null
+                        ratio_x:
+                          type: integer
+                          required: false
+                          description: Aspect ration for video on X plane
+                          default: null
+                        ratio_y:
+                          type: integer
+                          required: false
+                          description: Aspect ration for video on Y plane
+                          default: null
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - requests
+                  id:
+                    type: integer
+                    format: int64
+                  relationships:
+                    type: object
+                    default: null
+                    properties:
+                      original_video:
+                        type: object
+                        default: null
+                        properties:
+                          links:
+                            type: object
+                            properties:
+                              self:
+                                enum:
+                                  - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                          data:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                format: int64
+                              type:
+                                enum:
+                                  - videos
+                      converted_video:
+                        type: object
+                        default: null
+                        properties:
+                          links:
+                            type: object
+                            properties:
+                              self:
+                                enum:
+                                  - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                          data:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                format: int64
+                              type:
+                                enum:
+                                  - videos
+                  attributes:
+                    type: object
+                    properties:
+                      video_name:
+                        type: string
+                      status:
+                        enum:
+                          - original_in_review
+                          - failed
+                          - success
+                        description: Status of video
+                      details:
+                        type: string
+                        default: null
+                        description: Describe why video didn't complete
+                      bitrate:
+                        type: integer
+                        format: int64
+                        description: Requested Bitrate
+                        default: null
+                      resolution_x:
+                        type: integer
+                        description: Requested Resolution on X plane
+                        default: null
+                      resolution_y:
+                        type: integer
+                        description: Requests Resolution on Y plane
+                        default: null
+                      ratio_x:
+                        type: integer
+                        description: Requested aspect ratio on X plane
+                        default: null
+                      ratio_y:
+                        type: integer
+                        description: Requested aspect ratio on Y plane
+                        default: null
+    InvalidID:
+      description: Response returned if id is not int
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      enum:
+                        - Invalid ID
+    VideoNotFound:
+      description: Response returned if video not found
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      enum:
+                        - Can not fetch video
+    UserNotAuthorized:
+      description: Response returned if user not authorized
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      type: string
+    VideoDownloadUrl:
+      description: Response return URL for downloading video
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - videos
+                  id:
+                    type: string
+                    description: Url for downloading video
+    RetrieveVideoResponse:
+      description: Response returns if video has been found
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - videos
+                  id:
+                    type: integer
+                    format: int64
+                  links:
+                    type: object
+                    properties:
+                      self:
+                        enum:
+                          - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/videos/{id}
+                  attributes:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: Video name
+                        required: true
+                      size:
+                        type: integer
+                        format: int64
+                        description: Video size
+                        required: true
+                      bitrate:
+                        type: integer
+                        format: int64
+                        required: false
+                        description: Video bitrate
+                        default: null
+                      resolution_x:
+                        type: integer
+                        required: false
+                        description: Video resolution on X plane
+                        default: null
+                      resolution_y:
+                        type: integer
+                        required: false
+                        description: Video resolution on Y plane
+                        default: null
+                      ratio_x:
+                        type: integer
+                        required: false
+                        description: Aspect ration for video on X plane
+                        default: null
+                      ratio_y:
+                        type: integer
+                        required: false
+                        description: Aspect ration for video on Y plane
+                        default: null
+    SingInResponse:
+      description: Response returned if user signed in
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - users
+                  id:
+                    type: integer
+                    format: int64
+                  links:
+                    type: object
+                    properties:
+                      self:
+                        enum:
+                          - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/auth/me
+                  attributes:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                      token:
+                        type: string
+    SingInNotUsers:
+      description: Response returned if user does not found
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      enum:
+                        - User does not present
+    InternalServerError:
+      description: Response returned if error occured on server
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      type: string
+    InvalidQueryParams:
+      description: Response returned if query params have errors
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      type: string
+    ValidationFailed:
+      description: Response returned if validation failed
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              errors:
+                type: array
+                items:
+                  properties:
+                    title:
+                      enum:
+                        - Validation failed
+    UnsupportedMediaType:
+      description: Response returned if Accept Headers is not application/vnd.api+json
+    RegisterUserResponse:
+      description: Response returned back after registration
+      content:
+        application/vnd.api+json:
+          schema:
+            properties:
+              links:
+                type: object
+                properties:
+                  self:
+                    enum:
+                      - http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1/auth/me
+              data:
+                type: object
+                properties:
+                  type:
+                    enum:
+                      - users
+                  id:
+                    type: integer
+                    format: int64
+                  attributes:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+paths:
+  /users:
+    post:
+      operationId: RegisterUser
+      requestBody:
+        $ref: '#/components/requestBodies/RegisterUserRequest'
+      responses:
+        "201":
+          $ref: '#/components/responses/RegisterUserResponse'
+        "400":
+          $ref: '#/components/responses/ValidationFailed'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+  /auth/sign-in:
+    post:
+      operationId: SingIn
+      requestBody:
+        $ref: '#/components/requestBodies/SignInRequest'
+      responses:
+        "201":
+          $ref: '#/components/responses/SingInResponse'
+        "400":
+          $ref: '#/components/responses/ValidationFailed'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/SingInNotUsers'
+  /auth/me:
+    get:
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          $ref: '#/components/responses/RegisterUserResponse'
+        "401":
+          $ref: '#/components/responses/UserNotAuthorized'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/SingInNotUsers'
+  /videos/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: '#/components/responses/RetrieveVideoResponse'
+        "400":
+          $ref: '#/components/responses/InvalidID'
+        "401":
+          $ref: '#/components/responses/UserNotAuthorized'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/VideoNotFound'
+  /videos/download_url/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: '#/components/responses/VideoDownloadUrl'
+        "400":
+          $ref: '#/components/responses/InvalidID'
+        "401":
+          $ref: '#/components/responses/UserNotAuthorized'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+  /requests/{id}:
+    get:
+      security:
+        - bearerAuth: [ ]
+      responses:
+        "200":
+          $ref: '#/components/responses/RetrieveRequest'
+        "400":
+          $ref: '#/components/responses/InvalidID'
+        "401":
+          $ref: '#/components/responses/UserNotAuthorized'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+  /requests:
+    get:
+      parameters:
+        - in: query
+          schema:
+            type: integer
+          name: page[number]
+          description: Number of page
+        - in: query
+          schema:
+            type: integer
+          name: page[size]
+          description: Size of page
+      security:
+        - bearerAuth: [ ]
+      responses:
+        "200":
+          $ref: '#/components/responses/RetrieveRequestsList'
+        "400":
+          $ref: '#/components/responses/InvalidQueryParams'
+        "401":
+          $ref: '#/components/responses/UserNotAuthorized'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: CreateRequest
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        $ref: '#/components/requestBodies/CreateRequest'
+      responses:
+        "201":
+          $ref: '#/components/responses/RetrieveRequest'
+        "401":
+          $ref: '#/components/responses/UserNotAuthorized'
+        "415":
+          $ref: '#/components/responses/UnsupportedMediaType'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+security:
+  - bearerAuth: []
+servers:
+  - description: Production
+    url: http://ec2-18-222-207-147.us-east-2.compute.amazonaws.com/api/v1

@@ -36,6 +36,8 @@ func (h *Handler) InitRoutes() *fiber.App {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(logger.New())
+	app.Static("/docs/v1", "./docs/v1")
+
 	api := app.Group("/api")
 
 	api.Get("/ready", func(ctx *fiber.Ctx) error {
