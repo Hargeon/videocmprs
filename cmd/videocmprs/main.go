@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Hargeon/videocmprs/api"
 	"github.com/Hargeon/videocmprs/pkg/repository/request"
@@ -102,9 +104,24 @@ func main() {
 	h := api.NewHandler(db, publisher, storage, logger)
 	app := h.InitRoutes()
 
-	if err := app.Listen(os.Getenv("PORT")); err != nil {
-		logger.Fatal("Error occurred when starting app", zap.String("Error", err.Error()))
+	logger.Info("Starting web server...")
+
+	go func() {
+		if err := app.Listen(os.Getenv("PORT")); err != nil {
+			logger.Fatal("Error occurred when starting app", zap.String("Error", err.Error()))
+		}
+	}()
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-done
+	logger.Info("Server stopped")
+
+	if err := app.Shutdown(); err != nil {
+		logger.Fatal("Shutdown server", zap.Error(err))
 	}
+
+	logger.Info("Server Exited Properly")
 }
 
 func runMigrations() error {
