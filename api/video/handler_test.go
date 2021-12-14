@@ -1,8 +1,11 @@
 package video
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +17,24 @@ import (
 	"go.uber.org/zap"
 )
 
+type cloudMock struct{}
+
+func (c *cloudMock) Upload(ctx context.Context, header *multipart.FileHeader) (string, error) {
+	if header.Filename == "failed" {
+		return "", errors.New("failed connection")
+	}
+
+	return "mock_service_id", nil
+}
+
+func (c *cloudMock) URL(filename string) (string, error) {
+	if filename == "error" {
+		return "", errors.New("mock error")
+	}
+
+	return filename, nil
+}
+
 func TestRetrieve(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -23,8 +44,13 @@ func TestRetrieve(t *testing.T) {
 	logger := zap.NewExample()
 	defer logger.Sync()
 
-	h := NewHandler(db, logger)
+	h := NewHandler(db, &cloudMock{}, logger)
 	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user_id", int64(1))
+
+		return c.Next()
+	})
 	app.Mount("/videos", h.InitRoutes())
 
 	cases := []struct {
@@ -48,9 +74,9 @@ func TestRetrieve(t *testing.T) {
 		{
 			name: "Invalid db connection",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}))
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", video.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(mock.NewRows([]string{"id"}))
 			},
 			requestMock: func() *http.Request {
 				req := httptest.NewRequest(http.MethodGet, "/videos/1", nil)
@@ -63,6 +89,10 @@ func TestRetrieve(t *testing.T) {
 		{
 			name: "Valid db connection",
 			mock: func() {
+				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", video.TableName)).
+					WithArgs(1, 1).
+					WillReturnRows(mock.NewRows([]string{"id"}).AddRow(1))
+
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
 					WithArgs(1).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "size", "bitrate", "resolution_x", "resolution_y", "ratio_x", "ratio_y", "service_id"}).
@@ -73,7 +103,7 @@ func TestRetrieve(t *testing.T) {
 
 				return req
 			},
-			expectedBody:   `{"data":{"type":"videos","id":"1","attributes":{"bitrate":789569,"name":"my_name.mkv","ratio_x":4,"ratio_y":3,"resolution_x":700,"resolution_y":600,"size":1258000},"links":{"self":"/api/v1/videos/1"}}}` + "\n",
+			expectedBody:   `{"data":{"type":"videos","id":"1","attributes":{"bitrate":789569,"name":"my_name.mkv","ratio_x":4,"ratio_y":3,"resolution_x":700,"resolution_y":600,"size":1258000},"links":{"download":"/api/v1/videos/download_url/1","self":"/api/v1/videos/1"}}}` + "\n",
 			expectedStatus: http.StatusOK,
 		},
 	}

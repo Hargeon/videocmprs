@@ -61,8 +61,7 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 
 	resource, err := h.srv.GenerateToken(c.Context(), u)
 	if err != nil {
-		h.logger.Error("Generate token", zap.Error(err))
-		errors := []string{err.Error()}
+		errors := []string{"User does not present"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
@@ -90,8 +89,7 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 	res, err := h.srv.Retrieve(c.Context(), id)
 
 	if err != nil {
-		h.logger.Error("Can't retrieve User", zap.Error(err))
-		errors := []string{err.Error()}
+		errors := []string{"Can't retrieve User"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}

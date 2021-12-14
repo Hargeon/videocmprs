@@ -21,13 +21,17 @@ const (
 )
 
 type Handler struct {
-	srv    service.Retriever
+	srv    service.Video
 	logger *zap.Logger
 }
 
-func NewHandler(db *sql.DB, logger *zap.Logger) *Handler {
+type downloadURL struct {
+	URL string `jsonapi:"primary,videos"`
+}
+
+func NewHandler(db *sql.DB, cs service.CloudStorage, logger *zap.Logger) *Handler {
 	repo := video.NewRepository(db)
-	vSrv := videosrv.NewService(repo)
+	vSrv := videosrv.NewService(repo, cs)
 
 	return &Handler{srv: vSrv, logger: logger}
 }
@@ -35,11 +39,23 @@ func NewHandler(db *sql.DB, logger *zap.Logger) *Handler {
 func (h *Handler) InitRoutes() *fiber.App {
 	router := fiber.New()
 	router.Get("/:id", h.retrieve)
+	router.Get("/download_url/:id", h.downloadURL)
 
 	return router
 }
 
+// retrieve video by userID and videoID
 func (h *Handler) retrieve(c *fiber.Ctx) error {
+	uID, ok := c.Locals("user_id").(int64)
+
+	if !ok {
+		h.logger.Error("Invalid type assertion for User ID")
+
+		errors := []string{"Invalid user ID"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
 	idStr := c.Params("id")
 	id, err := strconv.ParseInt(idStr, IDBase, IDBitSize)
 
@@ -49,7 +65,7 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
-	res, err := h.srv.Retrieve(c.Context(), id)
+	res, err := h.srv.Retrieve(c.Context(), uID, id)
 
 	if err != nil {
 		h.logger.Error("Get video", zap.String("Error", err.Error()),
@@ -69,4 +85,35 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 	}
 
 	return nil
+}
+
+// downloadURL returns url for downloading video from cloud
+func (h *Handler) downloadURL(c *fiber.Ctx) error {
+	uID, ok := c.Locals("user_id").(int64)
+
+	if !ok {
+		h.logger.Error("Invalid type assertion for User ID")
+
+		errors := []string{"Invalid user ID"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
+	idStr := c.Params("id")
+	id, err := strconv.ParseInt(idStr, IDBase, IDBitSize)
+
+	if err != nil || id <= 0 {
+		errors := []string{"Invalid ID"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
+	url, err := h.srv.DownloadURL(c.Context(), uID, id)
+	if err != nil {
+		errors := []string{"Something went wong"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
+	return jsonapi.MarshalPayload(c.Status(http.StatusOK), &downloadURL{URL: url})
 }

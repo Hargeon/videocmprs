@@ -33,7 +33,7 @@ type Handler struct {
 func NewHandler(db *sql.DB, cS service.CloudStorage, pb service.Publisher, logger *zap.Logger) *Handler {
 	reqRepo := reqrepo.NewRepository(db)
 	vRepo := video.NewRepository(db)
-	srv := request.NewService(reqRepo, vRepo, cS, pb)
+	srv := request.NewService(reqRepo, vRepo, cS, pb, logger)
 
 	return &Handler{srv: srv, logger: logger}
 }
@@ -52,6 +52,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 
 	if !ok {
 		h.logger.Error("Invalid type assertion for User ID")
+
 		errors := []string{"Invalid user ID"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -62,6 +63,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Error("Can't Read video from request", zap.Error(err),
 			zap.Int64("User ID", uID))
+
 		errors := []string{"Request does not include file"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -71,6 +73,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 
 	if !ok {
 		h.logger.Warn("File is not a video", zap.Int64("User ID", uID))
+
 		errors := []string{"File is not a video"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -83,17 +86,20 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	if err := jsonapi.UnmarshalPayload(buf, res); err != nil {
 		h.logger.Error("can't unmarshal request for creating request", zap.Error(err),
 			zap.Int64("User ID", uID))
+
 		errors := []string{"Invalid request params"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
+	res.UserID = uID
 	res.VideoName = file.Filename
 
 	validation := validator.New()
 
 	if err = validation.Struct(res); err != nil {
 		h.logger.Error("Validation Failed", zap.Error(err), zap.Int64("User ID", uID))
+
 		errors := []string{"Validation failed"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -101,17 +107,17 @@ func (h *Handler) create(c *fiber.Ctx) error {
 
 	res.VideoRequest = file
 	res.OriginalVideo = &video.Resource{
-		Name: file.Filename,
-		Size: file.Size,
+		Name:   file.Filename,
+		Size:   file.Size,
+		UserID: uID,
 	}
-
-	res.UserID = uID
 
 	r, err := h.srv.Create(c.Context(), res)
 
 	if err != nil {
 		h.logger.Error("Create request", zap.Error(err),
 			zap.Int64("User ID", uID))
+
 		errors := []string{"Can not create request"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
@@ -125,6 +131,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 
 	if !ok {
 		h.logger.Error("Invalid type assertion for User ID")
+
 		errors := []string{"Invalid user ID"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -136,6 +143,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Error("Can't convert pageNum to int", zap.Error(err),
 			zap.Int64("User ID", uID), zap.String("pageNumS", pageNumS))
+
 		errors := []string{"Invalid page number params"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -151,6 +159,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Error("Can't convert pageSize to int", zap.Error(err),
 			zap.Int64("User ID", uID), zap.String("pageSizeS", pageSizeS))
+
 		errors := []string{"Invalid page size params"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
@@ -167,6 +176,7 @@ func (h *Handler) list(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Error("List requests", zap.Error(err),
 			zap.Int64("User ID", uID))
+
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
@@ -198,21 +208,33 @@ func (h *Handler) isFile(types []string) bool {
 }
 
 func (h *Handler) retrieve(c *fiber.Ctx) error {
+	uID, ok := c.Locals("user_id").(int64)
+
+	if !ok {
+		h.logger.Error("Invalid type assertion for User ID")
+
+		errors := []string{"Invalid user ID"}
+
+		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+	}
+
 	idStr := c.Params("id")
 	id, err := strconv.ParseInt(idStr, IDBase, IDBitSize)
 
 	if err != nil || id <= 0 {
 		h.logger.Error("Invalid request ID", zap.Error(err), zap.Int64("Request ID", id))
+
 		errors := []string{"Invalid ID"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
 
-	res, err := h.srv.Retrieve(c.Context(), id)
+	res, err := h.srv.Retrieve(c.Context(), uID, id)
 
 	if err != nil {
 		h.logger.Error("Retrieve request", zap.Error(err),
 			zap.Int64("Request ID", id))
+
 		errors := []string{"Can not fetch video"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
@@ -223,6 +245,7 @@ func (h *Handler) retrieve(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Error("Invalid response marshaling", zap.Error(err),
 			zap.Int64("Request ID", id))
+
 		errors := []string{err.Error()}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)

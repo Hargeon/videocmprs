@@ -26,6 +26,10 @@ func (c *cloudMock) Upload(ctx context.Context, header *multipart.FileHeader) (s
 	return "mock_service_id", nil
 }
 
+func (c *cloudMock) URL(filename string) (string, error) {
+	return filename, nil
+}
+
 type rabbitSuccess struct{}
 
 func (r *rabbitSuccess) Publish(body []byte) error {

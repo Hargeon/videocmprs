@@ -36,6 +36,8 @@ func (h *Handler) InitRoutes() *fiber.App {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(logger.New())
+	app.Static("/docs/v1", "./docs/v1")
+
 	api := app.Group("/api")
 
 	api.Get("/ready", func(ctx *fiber.Ctx) error {
@@ -51,7 +53,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 	v1.Use(middleware.UserIdentify)
 
 	v1.Mount("/requests", request.NewHandler(h.db, h.cs, h.publisher, h.logger).InitRoutes())
-	v1.Mount("/videos", video.NewHandler(h.db, h.logger).InitRoutes())
+	v1.Mount("/videos", video.NewHandler(h.db, h.cs, h.logger).InitRoutes())
 
 	return app
 }

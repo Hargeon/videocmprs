@@ -29,6 +29,7 @@ func TestService_AddConvertedVideo(t *testing.T) {
 			name: "Valid db connection",
 			video: &video.Resource{
 				Name:        "converted_video.mkv",
+				UserID:      1,
 				Size:        12500,
 				Bitrate:     64000,
 				ResolutionX: 800,
@@ -39,7 +40,7 @@ func TestService_AddConvertedVideo(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500).
+					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
@@ -56,6 +57,7 @@ func TestService_AddConvertedVideo(t *testing.T) {
 			name: "Invalid db connection",
 			video: &video.Resource{
 				Name:        "converted_video.mkv",
+				UserID:      1,
 				Size:        12500,
 				Bitrate:     64000,
 				ResolutionX: 800,
@@ -66,7 +68,7 @@ func TestService_AddConvertedVideo(t *testing.T) {
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500).
+					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			expectedID:   0,
@@ -140,9 +142,9 @@ func TestService_Update(t *testing.T) {
 					WithArgs("Invalid ffmpeg path", "failed", 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+				mock.ExpectQuery("SELECT requests.id, requests.user_id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.user_id", "requests.status",
 						"requests.details", "requests.bitrate", "requests.resolution_x",
 						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
 						"requests.video_name", "origin_video.id", "origin_video.name",
@@ -152,7 +154,7 @@ func TestService_Update(t *testing.T) {
 						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
 						"converted_video.resolution_y", "converted_video.ratio_x",
 						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
-						1, "failed", "Invalid ffmpeg path", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
+						1, 1, "failed", "Invalid ffmpeg path", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
 						1258000, 0, 0, 0, 0, 0, "mock_service_id", nil, nil, nil, nil,
 						nil, nil, nil, nil, nil))
 			},
@@ -176,9 +178,9 @@ func TestService_Update(t *testing.T) {
 					WithArgs("Converted video does not present", "failed", 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+				mock.ExpectQuery("SELECT requests.id, requests.user_id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.user_id", "requests.status",
 						"requests.details", "requests.bitrate", "requests.resolution_x",
 						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
 						"requests.video_name", "origin_video.id", "origin_video.name",
@@ -188,7 +190,7 @@ func TestService_Update(t *testing.T) {
 						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
 						"converted_video.resolution_y", "converted_video.ratio_x",
 						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
-						1, "failed", "Converted video does not present", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
+						1, 1, "failed", "Converted video does not present", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
 						1258000, 0, 0, 0, 0, 0, "mock_service_id", nil, nil, nil, nil,
 						nil, nil, nil, nil, nil))
 			},
@@ -196,10 +198,10 @@ func TestService_Update(t *testing.T) {
 		},
 		{
 			name: "With ConvertedVideo in response, invalid db connection for videos and requests",
-			data: []byte(`{"request_id":1,"converted_video":{"name":"converted_video.mkv","size":12500,"bitrate":64000,"resolution_x":800,"resolution_y":600,"ratio_x":4,"ratio_y":3,"service_id":"mock_service"}}`),
+			data: []byte(`{"request_id":1,"converted_video":{"name":"converted_video.mkv","user_id":1,"size":12500,"bitrate":64000,"resolution_x":800,"resolution_y":600,"ratio_x":4,"ratio_y":3,"service_id":"mock_service"}}`),
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500).
+					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 				mock.ExpectQuery(fmt.Sprintf("UPDATE %s", request.TableName)).
@@ -210,10 +212,10 @@ func TestService_Update(t *testing.T) {
 		},
 		{
 			name: "With ConvertedVideo in response, valid db connection for videos and invalid for requests",
-			data: []byte(`{"request_id":1,"converted_video":{"name":"converted_video.mkv","size":12500,"bitrate":64000,"resolution_x":800,"resolution_y":600,"ratio_x":4,"ratio_y":3,"service_id":"mock_service"}}`),
+			data: []byte(`{"request_id":1,"converted_video":{"name":"converted_video.mkv","user_id":1,"size":12500,"bitrate":64000,"resolution_x":800,"resolution_y":600,"ratio_x":4,"ratio_y":3,"service_id":"mock_service"}}`),
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500).
+					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
@@ -229,10 +231,10 @@ func TestService_Update(t *testing.T) {
 		},
 		{
 			name: "With ConvertedVideo in response, valid db connection for videos requests",
-			data: []byte(`{"request_id":1,"converted_video":{"name":"converted_video.mkv","size":12500,"bitrate":64000,"resolution_x":800,"resolution_y":600,"ratio_x":4,"ratio_y":3,"service_id":"mock_service"}}`),
+			data: []byte(`{"request_id":1,"converted_video":{"name":"converted_video.mkv","user_id":1,"size":12500,"bitrate":64000,"resolution_x":800,"resolution_y":600,"ratio_x":4,"ratio_y":3,"service_id":"mock_service"}}`),
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", video.TableName)).
-					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500).
+					WithArgs(64000, "converted_video.mkv", 4, 3, 800, 600, "mock_service", 12500, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
 
 				mock.ExpectQuery(fmt.Sprintf("SELECT id, name, size, bitrate, resolution_x, resolution_y, ratio_x, ratio_y, service_id FROM %s", video.TableName)).
@@ -244,9 +246,9 @@ func TestService_Update(t *testing.T) {
 					WithArgs(2, completedStatus, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+				mock.ExpectQuery("SELECT requests.id, requests.user_id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.user_id", "requests.status",
 						"requests.details", "requests.bitrate", "requests.resolution_x",
 						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
 						"requests.video_name", "origin_video.id", "origin_video.name",
@@ -256,7 +258,7 @@ func TestService_Update(t *testing.T) {
 						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
 						"converted_video.resolution_y", "converted_video.ratio_x",
 						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
-						1, completedStatus, "", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
+						1, 1, completedStatus, "", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
 						1258000, 0, 0, 0, 0, 0, "mock_service_id", 2, "converted_video.mkv", 12500, 64000,
 						800, 600, 4, 3, "mock_service_id"))
 			},
@@ -454,9 +456,9 @@ func TestService_UpdateRequestStatus(t *testing.T) {
 					WithArgs("Can't add video to database", "failed", 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-				mock.ExpectQuery("SELECT requests.id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
+				mock.ExpectQuery("SELECT requests.id, requests.user_id, requests.status, requests.details, requests.bitrate, requests.resolution_x, requests.resolution_y, requests.ratio_x, requests.ratio_y, requests.video_name, origin_video.id, origin_video.name, origin_video.size, origin_video.bitrate, origin_video.resolution_x, origin_video.resolution_y, origin_video.ratio_x, origin_video.ratio_y, origin_video.service_id, converted_video.id, converted_video.name, converted_video.size, converted_video.bitrate, converted_video.resolution_x, converted_video.resolution_y, converted_video.ratio_x, converted_video.ratio_y, converted_video.service_id FROM requests LEFT JOIN videos AS origin_video ON requests.original_file_id = origin_video.id LEFT JOIN videos AS converted_video ON requests.converted_file_id = converted_video.id").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.status",
+					WillReturnRows(sqlmock.NewRows([]string{"requests.id", "requests.user_id", "requests.status",
 						"requests.details", "requests.bitrate", "requests.resolution_x",
 						"requests.resolution_y", "requests.ratio_x", "requests.ratio_y",
 						"requests.video_name", "origin_video.id", "origin_video.name",
@@ -466,7 +468,7 @@ func TestService_UpdateRequestStatus(t *testing.T) {
 						"converted_video.size", "converted_video.bitrate", "converted_video.resolution_x",
 						"converted_video.resolution_y", "converted_video.ratio_x",
 						"converted_video.ratio_y", "converted_video.service_id"}).AddRow(
-						1, "failed", "Can't add video to database", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
+						1, 1, "failed", "Can't add video to database", 64000, 800, 600, 4, 3, "new_video", 1, "my_name.mkv",
 						1258000, 0, 0, 0, 0, 0, "mock_service_id", nil, nil, nil, nil,
 						nil, nil, nil, nil, nil))
 			},

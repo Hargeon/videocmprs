@@ -21,6 +21,10 @@ type Paginator interface {
 	List(ctx context.Context, params *query.Params) ([]interface{}, error)
 }
 
+type RelationExistable interface {
+	RelationExists(ctx context.Context, userID, relationID int64) (int64, error)
+}
+
 type Existable interface {
 	Retriever
 	Exists(ctx context.Context, email, password string) (int64, error)
@@ -38,6 +42,7 @@ type CreatorRetriever interface {
 type VideoRepository interface {
 	Retriever
 	Updater
+	RelationExistable
 
 	Create(ctx context.Context, fields map[string]interface{}) (jsonapi.Linkable, error)
 }
@@ -46,4 +51,5 @@ type RequestRepository interface {
 	CreatorRetriever
 	Updater
 	Paginator
+	RelationExistable
 }

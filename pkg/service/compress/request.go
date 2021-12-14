@@ -15,14 +15,17 @@ type Request struct {
 	Resolution     string `json:"resolution"`
 	Ratio          string `json:"ratio"`
 	VideoID        int64  `json:"video_id"`
+	UserID         int64  `json:"user_id"`
 	VideoServiceID string `json:"video_service_id"`
 }
 
 // NewRequest initialize *Request. Need use *request.Resource with *OriginalVideo
 func NewRequest(r *request.Resource) *Request {
-	req := new(Request)
-	req.RequestID = r.ID
-	req.Bitrate = r.Bitrate
+	req := &Request{
+		RequestID: r.ID,
+		Bitrate:   r.Bitrate,
+		UserID:    r.UserID,
+	}
 
 	if r.ResolutionX != 0 || r.ResolutionY != 0 {
 		req.Resolution = fmt.Sprintf("%d:%d",

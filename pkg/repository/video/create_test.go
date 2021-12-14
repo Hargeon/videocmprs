@@ -35,10 +35,11 @@ func TestCreate(t *testing.T) {
 				Name:      "my_name.mkv",
 				Size:      1258000,
 				ServiceID: "mock_service_id",
+				UserID:    1,
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs("my_name.mkv", "mock_service_id", 1258000).
+					WithArgs("my_name.mkv", "mock_service_id", 1258000, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).
 						AddRow(1))
 
@@ -65,10 +66,11 @@ func TestCreate(t *testing.T) {
 				Name:      "qwe",
 				Size:      125,
 				ServiceID: "mock_service_id",
+				UserID:    1,
 			},
 			mock: func() {
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", TableName)).
-					WithArgs("qwe", "mock_service_id", 125).
+					WithArgs("qwe", "mock_service_id", 125, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			errorPresent: true,
