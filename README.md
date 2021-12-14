@@ -16,6 +16,16 @@ goose -dir db/migrations/common create users sql
 goose -dir db/migrations/common postgres "user=postgres dbname=... sslmode=disable host=... port=... password=..." up
 ```
 
+## Run application
+```go
+go run cmd/videocmprs/main.go
+```
+
+## Testing
+```go
+go test -v ./...
+```
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
