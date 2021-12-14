@@ -16,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
 )
 
@@ -36,6 +37,7 @@ func (h *Handler) InitRoutes() *fiber.App {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(logger.New())
+	app.Use(recover.New())
 	app.Static("/docs/v1", "./docs/v1")
 
 	api := app.Group("/api")
