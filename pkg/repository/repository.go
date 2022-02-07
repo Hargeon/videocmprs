@@ -25,11 +25,6 @@ type RelationExistable interface {
 	RelationExists(ctx context.Context, userID, relationID int64) (int64, error)
 }
 
-type Existable interface {
-	Retriever
-	Exists(ctx context.Context, email, password string) (int64, error)
-}
-
 type Updater interface {
 	Update(ctx context.Context, id int64, fields map[string]interface{}) (jsonapi.Linkable, error)
 }
@@ -37,6 +32,14 @@ type Updater interface {
 type CreatorRetriever interface {
 	Creator
 	Retriever
+}
+
+type UserRepository interface {
+	Creator
+	Retriever
+
+	Exists(ctx context.Context, email, password string) (int64, error)
+	Unique(ctx context.Context, email string) (bool, error)
 }
 
 type VideoRepository interface {
