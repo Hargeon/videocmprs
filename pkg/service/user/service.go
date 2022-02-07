@@ -2,22 +2,22 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
+	"github.com/Hargeon/videocmprs/pkg/service"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
 
 	"github.com/google/jsonapi"
 )
 
 type Service struct {
-	repo repository.CreatorRetriever
+	repo repository.UserRepository
 }
 
 // NewService initialize Service
-func NewService(repo repository.CreatorRetriever) *Service {
+func NewService(repo repository.UserRepository) *Service {
 	return &Service{repo: repo}
 }
 
@@ -26,7 +26,16 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 	usr, ok := resource.(*user.Resource)
 
 	if !ok {
-		return nil, errors.New("invalid type assertion in service")
+		return nil, service.ErrInvalidTypeAssertion
+	}
+
+	ok, err := srv.repo.Unique(ctx, usr.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	if !ok {
+		return nil, service.ErrAlreadyExists
 	}
 
 	hashPass := encryption.GenerateHash([]byte(usr.Password))
