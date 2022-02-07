@@ -3,11 +3,11 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Hargeon/videocmprs/pkg/repository"
 	"github.com/Hargeon/videocmprs/pkg/repository/user"
+	"github.com/Hargeon/videocmprs/pkg/service"
 	"github.com/Hargeon/videocmprs/pkg/service/encryption"
 	"github.com/Hargeon/videocmprs/pkg/service/jwt"
 
@@ -16,11 +16,11 @@ import (
 
 // Service ...
 type Service struct {
-	repo repository.Existable
+	repo repository.UserRepository
 }
 
 // NewService initialize Service
-func NewService(repo repository.Existable) *Service {
+func NewService(repo repository.UserRepository) *Service {
 	return &Service{repo: repo}
 }
 
@@ -28,7 +28,16 @@ func NewService(repo repository.Existable) *Service {
 func (srv *Service) GenerateToken(ctx context.Context, resource jsonapi.Linkable) (jsonapi.Linkable, error) {
 	usr, ok := resource.(*user.Resource)
 	if !ok {
-		return nil, errors.New("invalid type assertion in auth service")
+		return nil, service.ErrInvalidTypeAssertion
+	}
+
+	ok, err := srv.repo.Unique(ctx, usr.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	if ok {
+		return nil, service.ErrUserNotExists
 	}
 
 	hashPass := encryption.GenerateHash([]byte(usr.Password))
