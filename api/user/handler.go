@@ -4,6 +4,7 @@ package user
 import (
 	"bytes"
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/Hargeon/videocmprs/api/response"
@@ -45,7 +46,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 
 	if err := jsonapi.UnmarshalPayload(bodyReader, usr); err != nil {
 		h.logger.Error("Can't unmarshal request for creating user", zap.Error(err))
-		errors := []string{"Bad request"}
+		errors := []string{"Request is not in jsonapi format"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
@@ -64,7 +65,12 @@ func (h *Handler) create(c *fiber.Ctx) error {
 
 	if err != nil {
 		h.logger.Error("Can't create user", zap.Error(err))
-		errors := []string{err.Error()}
+		if errors.Is(err, service.ErrAlreadyExists) {
+			errors := []string{"The user is already exists"}
+
+			return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+		}
+		errors := []string{"Something went wrong"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
@@ -73,7 +79,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 
 	if err != nil {
 		h.logger.Error("Invalid response marshaling", zap.Error(err))
-		errors := []string{err.Error()}
+		errors := []string{"Something went wrong after creating user"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}
