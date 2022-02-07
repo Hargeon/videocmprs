@@ -7,18 +7,18 @@ import (
 )
 
 // Unique function check if user with email exists
-func (repo *Repository) Unique(ctx context.Context, email string) bool {
+func (repo *Repository) Unique(ctx context.Context, email string) (bool, error) {
 	c, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	var id int64
-	err := sq.Select("id").
+	var total int64
+	err := sq.Select("count(*) as total").
 		From(TableName).
 		Where(sq.Eq{"email": email}).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(repo.db).
 		QueryRowContext(c).
-		Scan(&id)
+		Scan(&total)
 
-	return err != nil
+	return total == 0, err
 }

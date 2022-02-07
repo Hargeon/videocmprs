@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -19,26 +18,40 @@ func TestUnique(t *testing.T) {
 		email          string
 		mock           func()
 		expectedResult bool
+		errorPresent   bool
 	}{
 		{
 			name:  "User exists in db",
 			email: "check@gmail.com",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", TableName)).
+				mock.ExpectQuery("SELECT count").
 					WithArgs("check@gmail.com").
-					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("1"))
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(1))
 			},
 			expectedResult: false,
+			errorPresent:   false,
+		},
+		{
+			name:  "Sql error",
+			email: "not_exists@gmail.com",
+			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("not_exists@gmail.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}))
+			},
+			expectedResult: true,
+			errorPresent:   true,
 		},
 		{
 			name:  "User is not exists in db",
-			email: "not_exists@gmail.com",
+			email: "check@gmail.com",
 			mock: func() {
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", TableName)).
-					WithArgs("not_exists@gmail.com").
-					WillReturnRows(sqlmock.NewRows([]string{"id"}))
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check@gmail.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(0))
 			},
 			expectedResult: true,
+			errorPresent:   false,
 		},
 	}
 
@@ -46,7 +59,15 @@ func TestUnique(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mock()
 			repo := NewRepository(db)
-			result := repo.Unique(context.Background(), testCase.email)
+			result, err := repo.Unique(context.Background(), testCase.email)
+			if err != nil && !testCase.errorPresent {
+				t.Errorf("Unexpected error, %s\n", err.Error())
+			}
+
+			if err == nil && testCase.errorPresent {
+				t.Errorf("Should be error\n")
+			}
+
 			if result != testCase.expectedResult {
 				t.Errorf("invalid result, expected: %v, got: %v\n",
 					testCase.expectedResult, result)
