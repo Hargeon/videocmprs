@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/Hargeon/videocmprs/api/middleware"
@@ -45,7 +46,7 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 	if err := jsonapi.UnmarshalPayload(bodyReader, u); err != nil {
 		h.logger.Error("Can't unmarshal request for sign in user", zap.Error(err))
 
-		errors := []string{"Bad request"}
+		errors := []string{"Request is not in jsonapi format"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
 	}
@@ -61,7 +62,12 @@ func (h *Handler) signIn(c *fiber.Ctx) error {
 
 	resource, err := h.srv.GenerateToken(c.Context(), u)
 	if err != nil {
-		errors := []string{"User does not present"}
+		if errors.Is(err, service.ErrUserNotExists) {
+			errors := []string{"User is not exists"}
+
+			return response.ErrorJsonApiResponse(c, http.StatusBadRequest, errors)
+		}
+		errors := []string{"Something went wrong"}
 
 		return response.ErrorJsonApiResponse(c, http.StatusInternalServerError, errors)
 	}

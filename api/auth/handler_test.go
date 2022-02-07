@@ -61,7 +61,7 @@ func TestSignIn(t *testing.T) {
 			},
 			mock:           func() {},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"errors":[{"title":"Bad request"}]}` + "\n",
+			expectedBody:   `{"errors":[{"title":"Request is not in jsonapi format"}]}` + "\n",
 		},
 		{
 			name: "With invalid email",
@@ -120,6 +120,10 @@ func TestSignIn(t *testing.T) {
 				return reqBuf.Bytes()
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check@check.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(1))
+
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
@@ -128,7 +132,7 @@ func TestSignIn(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name: "With invalid db params",
+			name: "User is not exists",
 			user: &user.Resource{
 				Email:    "check@check.com",
 				Password: "qweqweqwe",
@@ -144,13 +148,41 @@ func TestSignIn(t *testing.T) {
 				return reqBuf.Bytes()
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check@check.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(0))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":[{"title":"User is not exists"}]}` + "\n",
+		},
+		{
+			name: "With invalid db connection",
+			user: &user.Resource{
+				Email:    "check@check.com",
+				Password: "qweqweqwe",
+			},
+			marshalUser: func(user interface{}) []byte {
+				var reqBody []byte
+				reqBuf := bytes.NewBuffer(reqBody)
+				err := jsonapi.MarshalPayload(reqBuf, user)
+				if err != nil {
+					t.Fatalf("Error occured when marshaling user, error: %s\n", err.Error())
+				}
+
+				return reqBuf.Bytes()
+			},
+			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check@check.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(1))
+
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"errors":[{"title":"User does not present"}]}` + "\n",
+			expectedBody:   `{"errors":[{"title":"Something went wrong"}]}` + "\n",
 		},
 	}
 
