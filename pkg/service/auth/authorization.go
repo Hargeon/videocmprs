@@ -31,12 +31,12 @@ func (srv *Service) GenerateToken(ctx context.Context, resource jsonapi.Linkable
 		return nil, service.ErrInvalidTypeAssertion
 	}
 
-	ok, err := srv.repo.Unique(ctx, usr.Email)
+	notExist, err := srv.repo.Unique(ctx, usr.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	if ok {
+	if notExist {
 		return nil, service.ErrUserNotExists
 	}
 

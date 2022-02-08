@@ -29,12 +29,12 @@ func (srv *Service) Create(ctx context.Context, resource jsonapi.Linkable) (json
 		return nil, service.ErrInvalidTypeAssertion
 	}
 
-	ok, err := srv.repo.Unique(ctx, usr.Email)
+	unique, err := srv.repo.Unique(ctx, usr.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	if !ok {
+	if !unique {
 		return nil, service.ErrAlreadyExists
 	}
 
