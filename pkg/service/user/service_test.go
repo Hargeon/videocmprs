@@ -34,6 +34,10 @@ func TestCreate(t *testing.T) {
 				Password: "qjwpeqwpoekpqwe",
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check@check.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(0))
+
 				passHash := encryption.GenerateHash([]byte("qjwpeqwpoekpqwe"))
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", passHash)).
@@ -54,6 +58,10 @@ func TestCreate(t *testing.T) {
 				Password: "qjwpeqwpoekpqwe",
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(0))
+
 				passHash := encryption.GenerateHash([]byte("qjwpeqwpoekpqwe"))
 				mock.ExpectQuery(fmt.Sprintf("INSERT INTO %s", user.TableName)).
 					WithArgs("", fmt.Sprintf("%x", passHash)).

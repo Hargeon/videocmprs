@@ -31,6 +31,10 @@ func TestGenerateToken(t *testing.T) {
 				Password: "qweqweqwe",
 			},
 			mock: func() {
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check@check.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(1))
+
 				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
 				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
 					WithArgs("check@check.com", fmt.Sprintf("%x", hashPass)).
@@ -46,10 +50,9 @@ func TestGenerateToken(t *testing.T) {
 				Password: "qweqweqwe",
 			},
 			mock: func() {
-				hashPass := encryption.GenerateHash([]byte("qweqweqwe"))
-				mock.ExpectQuery(fmt.Sprintf("SELECT id FROM %s", user.TableName)).
-					WithArgs("check2@check.com", fmt.Sprintf("%x", hashPass)).
-					WillReturnRows(sqlmock.NewRows([]string{"id"}))
+				mock.ExpectQuery("SELECT count").
+					WithArgs("check2@check.com").
+					WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(0))
 			},
 			errorPresent: true,
 			tokenPresent: false,
